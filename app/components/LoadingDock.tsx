@@ -35,74 +35,60 @@ export function LoadingDock() {
     total + getMaterialValue(materialId, amount), 0);
 
   return (
-    <motion.div
-      className="p-6 rounded-xl bg-gray-800/50 border border-gray-700"
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Loading Dock</h2>
-        <div className="text-sm text-gray-400">Level {loadingDock.level}</div>
-      </div>
-      
-      {/* Storage Meter */}
-      <div className="relative h-4 bg-gray-700 rounded-full overflow-hidden mb-2">
-        <motion.div
-          className="absolute h-full bg-cyan-500/50"
-          initial={{ width: 0 }}
-          animate={{ width: `${percentFull}%` }}
-          transition={{ duration: 0.3 }}
-        />
-      </div>
-      
-      <div className="flex justify-between items-center mb-4">
-        <span className="text-gray-400">
-          Storage: {totalStored}/{loadingDock.capacity}
-        </span>
+        <h2 className="text-xl font-bold text-gray-300">Loading Dock</h2>
         <button
-          className="px-3 py-1 text-sm rounded-lg bg-cyan-500/10 border border-cyan-500/30 
-                     hover:bg-cyan-500/20 transition-all duration-300 disabled:opacity-50 
-                     disabled:cursor-not-allowed group"
+          className="px-4 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
+                   hover:bg-cyan-500/20 transition-all duration-300 disabled:opacity-50 
+                   disabled:cursor-not-allowed"
           onClick={() => dispatch({ type: 'UPGRADE_DOCK' })}
           disabled={money < getDockUpgradeCost()}
         >
-          <div className="text-sm font-bold text-gray-300 group-hover:text-white">Upgrade +10</div>
-          <div className="text-xs text-cyan-400/75">${getDockUpgradeCost().toLocaleString()}</div>
+          <div className="text-sm font-bold text-gray-300">Upgrade</div>
+          <div className="text-xs text-cyan-400/75">${formatNumber(getDockUpgradeCost())}</div>
         </button>
       </div>
 
-      {/* Material List */}
-      <div className="space-y-2 mb-6">
-        {Object.entries(loadingDock.stored).map(([materialId, amount]) => {
-          const value = getMaterialValue(materialId, amount);
-          return (
-            <div
-              key={materialId}
-              className="flex flex-col p-2 rounded-lg bg-gray-700/50"
-            >
-              <div className="flex justify-between items-center">
-                <span>{getMaterialName(materialId)}</span>
-                <span className="text-cyan-400">{amount}</span>
-              </div>
-              <div className="flex justify-end mt-1">
-                <span className="text-sm text-green-400">
-                  ${formatNumber(value)}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+      <div className="mb-4">
+        <div className="flex justify-between text-sm mb-1">
+          <span className="text-gray-400">Storage Level {loadingDock.level}</span>
+          <span className="text-gray-400">{totalStored}/{loadingDock.capacity}</span>
+        </div>
+        <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-cyan-500 transition-all duration-300"
+            style={{ width: `${Math.min(percentFull, 100)}%` }}
+          />
+        </div>
       </div>
 
-      {/* Sell Button */}
-      <button
-        className="button-primary w-full py-3 text-lg font-bold"
-        onClick={() => dispatch({ type: 'SELL_MATERIALS' })}
-        disabled={totalStored === 0}
-      >
-        Sell All Materials (${formatNumber(totalValue)})
-      </button>
-    </motion.div>
+      {/* Materials List */}
+      <div className="space-y-2">
+        {Object.entries(loadingDock.stored).map(([materialId, amount]) => (
+          <div key={materialId} className="flex justify-between items-center">
+            <span className="text-gray-400">{getMaterialName(materialId)}</span>
+            <span className="text-gray-300">{amount}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Total Value */}
+      <div className="mt-4 pt-4 border-t border-gray-700">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-400">Total Value:</span>
+          <span className="text-green-400">${formatNumber(totalValue)}</span>
+        </div>
+        <button
+          className="w-full mt-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/30 
+                   hover:bg-green-500/20 transition-all duration-300 disabled:opacity-50 
+                   disabled:cursor-not-allowed"
+          onClick={() => dispatch({ type: 'SELL_MATERIALS' })}
+          disabled={totalStored === 0}
+        >
+          Sell All Materials
+        </button>
+      </div>
+    </div>
   );
 } 

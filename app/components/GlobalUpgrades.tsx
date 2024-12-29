@@ -19,7 +19,12 @@ function UpgradeCard({ title, description, type, level, multiplier, isOpen, onTo
   const { state, dispatch } = useGame();
   
   const getUpgradeCost = () => {
-    return Math.floor(5000 * Math.pow(2, level));
+    return Math.floor(10000 * Math.pow(2, level - 1));
+  };
+
+  const getNextMultiplier = () => {
+    const baseIncrease = type === 'storageOptimization' ? 0.10 : 0.05;
+    return 1 + ((level) * baseIncrease);
   };
 
   return (
@@ -55,7 +60,7 @@ function UpgradeCard({ title, description, type, level, multiplier, isOpen, onTo
                 <p className="text-sm text-gray-400 mb-2">{description}</p>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-cyan-400">Current: {(multiplier * 100).toFixed(0)}%</span>
-                  <span className="text-green-400">Next: {((multiplier + 0.05) * 100).toFixed(0)}%</span>
+                  <span className="text-green-400">Next: {(getNextMultiplier() * 100).toFixed(0)}%</span>
                 </div>
               </div>
               
@@ -97,11 +102,11 @@ export function GlobalUpgrades() {
       multiplier: state.globalUpgrades.nodeEfficiency.multiplier,
     },
     {
-      type: 'transportSpeed' as GlobalUpgradeType,
-      title: 'Transport Efficiency',
-      description: 'Reduces material production time for all nodes.',
-      level: state.globalUpgrades.transportSpeed.level,
-      multiplier: state.globalUpgrades.transportSpeed.multiplier,
+      type: 'storageOptimization' as GlobalUpgradeType,
+      title: 'Storage Optimization',
+      description: 'Increases the capacity bonus from Loading Dock upgrades.',
+      level: state.globalUpgrades.storageOptimization.level,
+      multiplier: state.globalUpgrades.storageOptimization.multiplier,
     },
   ];
 

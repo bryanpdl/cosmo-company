@@ -1,5 +1,5 @@
 export type UpgradeType = 'production' | 'value';
-export type GlobalUpgradeType = 'materialValue' | 'nodeEfficiency' | 'transportSpeed';
+export type GlobalUpgradeType = 'materialValue' | 'nodeEfficiency' | 'storageOptimization';
 
 export interface Material {
   id: string;
@@ -37,7 +37,7 @@ export interface GlobalUpgrades {
     level: number;
     multiplier: number;
   };
-  transportSpeed: {
+  storageOptimization: {
     level: number;
     multiplier: number;
   };
@@ -48,6 +48,7 @@ export interface GameState {
   nodes: Node[];
   loadingDock: LoadingDock;
   globalUpgrades: GlobalUpgrades;
+  _shouldSave?: boolean;
 }
 
 export type GameAction =
@@ -56,4 +57,6 @@ export type GameAction =
   | { type: 'UPGRADE_NODE'; payload: { nodeId: string; upgradeType: UpgradeType } }
   | { type: 'UNLOCK_NODE'; payload: { nodeId: string } }
   | { type: 'UPGRADE_DOCK' }
-  | { type: 'UPGRADE_GLOBAL'; payload: { upgradeType: GlobalUpgradeType } }; 
+  | { type: 'UPGRADE_GLOBAL'; payload: { upgradeType: GlobalUpgradeType } }
+  | { type: 'LOAD_GAME_STATE'; payload: GameState }
+  | { type: 'SAVE_GAME_STATE' }; 

@@ -11,6 +11,7 @@ import { useGame } from './context/GameContext';
 import { formatNumber } from './utils/formatters';
 import { FaFlask, FaUserAstronaut, FaCog, FaSignInAlt } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
+import { ParticleBackground } from './components/ParticleBackground';
 
 function GameContent() {
   const { state, isLoading } = useGame();
@@ -36,6 +37,7 @@ function GameContent() {
 
   return (
     <div className="min-h-screen p-8">
+      <ParticleBackground />
       {/* Header */}
       <div className="max-w-7xl mx-auto flex justify-between items-start mb-8">
         <div>
@@ -93,7 +95,7 @@ function GameContent() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="absolute right-0 mt-2 w-48 py-2 bg-gray-800 rounded-lg border border-gray-700 shadow-xl"
+                className="absolute right-0 mt-2 w-48 py-2 bg-gray-800 rounded-lg border border-gray-700 shadow-xl z-50"
               >
                 {user ? (
                   <>

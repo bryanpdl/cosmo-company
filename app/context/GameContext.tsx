@@ -47,7 +47,7 @@ const initialState: GameState = {
       level: 1,
       multiplier: 1,
     },
-    transportSpeed: {
+    storageOptimization: {
       level: 1,
       multiplier: 1,
     },
@@ -67,29 +67,37 @@ type GameAction =
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case 'PRODUCE_MATERIAL':
+    case 'PRODUCE_MATERIAL': {
       const { nodeId, amount } = action.payload;
       const node = state.nodes.find(n => n.id === nodeId);
       if (!node || !node.isUnlocked) return state;
+
+      // Get current amount of this material
+      const currentAmount = state.loadingDock.stored[node.material.id] || 0;
       
-      const currentStored = state.loadingDock.stored[node.material.id] || 0;
-      const newAmount = Math.min(
-        currentStored + amount,
-        state.loadingDock.capacity
-      );
+      // Calculate total storage used by all materials
+      const totalStorage = Object.values(state.loadingDock.stored).reduce((sum, amt) => sum + amt, 0);
       
+      // Calculate how much we can actually store
+      const spaceAvailable = state.loadingDock.capacity - totalStorage;
+      const amountToStore = Math.min(amount, spaceAvailable);
+      
+      // If no space available, return current state
+      if (spaceAvailable <= 0) return state;
+
       return {
         ...state,
         loadingDock: {
           ...state.loadingDock,
           stored: {
             ...state.loadingDock.stored,
-            [node.material.id]: newAmount,
+            [node.material.id]: currentAmount + amountToStore,
           },
         },
       };
+    }
 
-    case 'SELL_MATERIALS':
+    case 'SELL_MATERIALS': {
       let totalValue = 0;
       Object.entries(state.loadingDock.stored).forEach(([materialId, amount]) => {
         const material = materials.find(m => m.id === materialId);
@@ -110,7 +118,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...state.loadingDock,
           stored: {},
         },
+        _shouldSave: true, // Flag to trigger save
       };
+    }
 
     case 'UPGRADE_NODE': {
       const { nodeId: targetNodeId, upgradeType } = action.payload;
@@ -165,12 +175,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const dockUpgradeCost = Math.floor(100 * Math.pow(1.5, state.loadingDock.level - 1));
       if (state.money < dockUpgradeCost) return state;
 
+      // Calculate capacity increase with storage optimization multiplier
+      const baseCapacityIncrease = 10;
+      const optimizedCapacityIncrease = Math.floor(baseCapacityIncrease * state.globalUpgrades.storageOptimization.multiplier);
+
       return {
         ...state,
         money: state.money - dockUpgradeCost,
         loadingDock: {
           ...state.loadingDock,
-          capacity: state.loadingDock.capacity + 10,
+          capacity: state.loadingDock.capacity + optimizedCapacityIncrease,
           level: state.loadingDock.level + 1,
         },
       };
@@ -189,7 +203,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...state.globalUpgrades,
           [upgradeType]: {
             level: currentLevel + 1,
-            multiplier: 1 + (currentLevel * 0.05), // 5% increase per level
+            multiplier: 1 + (currentLevel * (upgradeType === 'storageOptimization' ? 0.10 : 0.05)), // 10% for storage, 5% for others
           },
         },
       };
@@ -201,7 +215,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'SAVE_GAME_STATE':
-      return state;
+      return {
+        ...state,
+        _shouldSave: false,
+      };
 
     default:
       return state;
@@ -219,7 +236,7 @@ const GameContext = createContext<{
 });
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [state, dispatch] = useReducer(gameReducer, { ...initialState, _shouldSave: false });
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   
@@ -231,7 +248,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         try {
           const savedState = await loadGameState(user.uid);
           if (savedState) {
-            dispatch({ type: 'LOAD_GAME_STATE', payload: savedState });
+            dispatch({ type: 'LOAD_GAME_STATE', payload: { ...savedState, _shouldSave: false } });
           }
         } catch (error) {
           console.error('Error loading game state:', error);
@@ -243,44 +260,52 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     loadGame();
   }, [user]);
 
-  // Save game state on important state changes
+  // Save game state when sell action occurs
   useEffect(() => {
-    if (!user || isLoading) return;
+    if (!user || isLoading || !state._shouldSave) return;
 
-    // Save the game state whenever it changes
+    console.log('Triggering save after sell action...');
     const saveGame = async () => {
       try {
-        await saveGameState(user.uid, state);
-        console.log('Game saved:', new Date().toLocaleTimeString());
+        const { _shouldSave, ...stateToSave } = state;
+        await saveGameState(user.uid, stateToSave);
+        console.log('Game saved successfully after selling:', new Date().toLocaleTimeString());
+        // Reset the save flag after successful save
+        dispatch({ type: 'SAVE_GAME_STATE' });
       } catch (error) {
         console.error('Error saving game state:', error);
       }
     };
 
-    // Debounce the save to prevent too frequent saves
-    const timeoutId = setTimeout(saveGame, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [user, state, isLoading]);
+    saveGame();
+  }, [user, isLoading, state._shouldSave]);
 
-  // Additional backup auto-save every 30 seconds
+  // Additional backup auto-save every 2 minutes
   useEffect(() => {
     if (!user || isLoading) return;
 
     console.log('Auto-save interval started');
     const saveInterval = setInterval(async () => {
+      // Don't auto-save if a manual save is pending
+      if (state._shouldSave) {
+        console.log('Skipping auto-save - manual save pending');
+        return;
+      }
+
       try {
-        await saveGameState(user.uid, state);
+        const { _shouldSave, ...stateToSave } = state;
+        await saveGameState(user.uid, stateToSave);
         console.log('Auto-save completed:', new Date().toLocaleTimeString());
       } catch (error) {
         console.error('Error in auto-save:', error);
       }
-    }, 30 * 1000);
+    }, 120 * 1000); // Changed to 2 minutes
 
     return () => {
       console.log('Auto-save interval cleared');
       clearInterval(saveInterval);
     };
-  }, [user, isLoading]); // Remove state dependency to keep interval stable
+  }, [user, isLoading]); // Keep interval stable
 
   // Save game state when user signs out or page unloads
   useEffect(() => {
@@ -289,7 +314,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const handleBeforeUnload = () => {
       // Synchronous save attempt for page unload
       try {
-        saveGameState(user.uid, state);
+        const { _shouldSave, ...stateToSave } = state;
+        saveGameState(user.uid, stateToSave);
       } catch (error) {
         console.error('Error saving on unload:', error);
       }
