@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Node as NodeType } from '../types/game';
 import { useGame } from '../context/GameContext';
 import { formatNumber } from '../utils/formatters';
-import { FaBolt, FaCoins } from 'react-icons/fa';
+import { FaBolt, FaCoins, FaClock } from 'react-icons/fa';
 import { playUpgradeSound, playUnlockSound } from '../utils/sounds';
 
 interface NodeProps {
@@ -116,31 +116,81 @@ export function Node({ node }: NodeProps) {
               <FaCoins className="text-purple-400" />
               Lv.{node.level.value}
             </div>
+            <div className="flex items-center gap-1">
+              <FaClock className="text-yellow-400" />
+              {(() => {
+                const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
+                const baseSpeed = 7 / Math.pow(1.5, nodeIndex);
+                const productionPerMs = (node.productionRate * node.level.production * baseSpeed) / 1000;
+                const materialsPerSecond = (productionPerMs * 1000) / 100; // Convert to materials per second
+                return materialsPerSecond.toFixed(1);
+              })()} MPS
+            </div>
           </div>
 
           {/* Production Progress */}
           <div className="mb-4">
             <div className="text-gray-400 flex justify-between items-center mb-2">
               <span>Production</span>
-              <span>{Math.floor(progress)}%</span>
+              {(() => {
+                const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
+                const baseSpeed = 7 / Math.pow(1.5, nodeIndex);
+                const productionPerMs = (node.productionRate * node.level.production * baseSpeed) / 1000;
+                const materialsPerSecond = (productionPerMs * 1000) / 100;
+                const isHighSpeed = materialsPerSecond >= 2.0;
+                return (
+                  <span>{isHighSpeed ? '100' : Math.floor(progress)}%</span>
+                );
+              })()}
             </div>
             <div className="relative h-2 bg-gray-700 rounded-full overflow-hidden">
-              <motion.div
-                className="absolute h-full bg-gradient-to-r from-cyan-500/50 to-cyan-400/50"
-                style={{ width: `${progress}%` }}
-                animate={{
-                  filter: [
-                    'brightness(1)',
-                    'brightness(1.2)',
-                    'brightness(1)',
-                  ],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
+              {(() => {
+                const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
+                const baseSpeed = 7 / Math.pow(1.5, nodeIndex);
+                const productionPerMs = (node.productionRate * node.level.production * baseSpeed) / 1000;
+                const materialsPerSecond = (productionPerMs * 1000) / 100;
+                const isHighSpeed = materialsPerSecond >= 2.0;
+
+                if (isHighSpeed) {
+                  return (
+                    <motion.div
+                      className="absolute h-full w-full bg-gradient-to-r from-cyan-500/50 to-cyan-400/50"
+                      animate={{
+                        filter: [
+                          'brightness(1) blur(0px)',
+                          'brightness(1.5) blur(1px)',
+                          'brightness(1) blur(0px)',
+                        ],
+                        opacity: [0.8, 1, 0.8]
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  );
+                }
+
+                return (
+                  <motion.div
+                    className="absolute h-full bg-gradient-to-r from-cyan-500/50 to-cyan-400/50"
+                    style={{ width: `${progress}%` }}
+                    animate={{
+                      filter: [
+                        'brightness(1)',
+                        'brightness(1.2)',
+                        'brightness(1)',
+                      ],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                );
+              })()}
             </div>
           </div>
 
