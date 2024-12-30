@@ -20,6 +20,10 @@ export default function LoadingDock() {
     return sum;
   }, 0);
 
+  // Calculate payload boost based on storage level
+  const payloadBoostMultiplier = 1 + (Math.floor(loadingDock.level / 10) * 0.05);
+  const boostedValue = totalValue * payloadBoostMultiplier;
+
   const totalStored = Object.values(loadingDock.stored).reduce((sum, amount) => sum + amount, 0);
   const isFull = totalStored >= loadingDock.capacity;
 
@@ -76,7 +80,7 @@ export default function LoadingDock() {
       </div>
 
       {/* Storage Progress Bar */}
-      <div className="w-full h-2 bg-gray-700/50 rounded-full mb-4 overflow-hidden">
+      <div className="w-full h-2 bg-gray-700/50 rounded-full mb-2 overflow-hidden">
         <div 
           className="h-full bg-cyan-500/50 rounded-full transition-all duration-300"
           style={{ 
@@ -86,7 +90,12 @@ export default function LoadingDock() {
         />
       </div>
 
-      
+      {/* Payload Boost Display */}
+      <div className="text-sm text-gray-400 mb-4 flex justify-between items-center">
+        <span className="text-cyan-400">
+          +{((payloadBoostMultiplier - 1) * 100).toFixed(0)}% Payload Boost (+${formatNumber(boostedValue - totalValue)})
+        </span>
+      </div>
 
       {/* Materials List */}
       <div className="space-y-2 mb-4">
@@ -111,7 +120,7 @@ export default function LoadingDock() {
                     hover:bg-cyan-500/20 transition-all duration-300 text-gray-300 
                     hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sell All (${formatNumber(totalValue)})
+          Sell All (${formatNumber(boostedValue)})
         </button>
 
         <button

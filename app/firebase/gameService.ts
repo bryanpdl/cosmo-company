@@ -88,7 +88,9 @@ export async function loadGameState(userId: string): Promise<GameState | null> {
       return {
         ...data,
         loadingDock: {
-          ...data.loadingDock,
+          capacity: data.loadingDock.capacity,
+          stored: data.loadingDock.stored,
+          level: data.loadingDock.level,
           hasManager: data.loadingDock.hasManager ?? false,
         },
         blackHole: data.blackHole ?? { level: 1 },

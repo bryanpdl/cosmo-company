@@ -2,14 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { formatNumber } from '../utils/formatters';
-import { playButtonSound, playUpgradeSound } from '../utils/sounds';
+import { playUpgradeSound, playBlackholeClickSound } from '../utils/sounds';
 
 export default function BlackHole() {
   const { state, dispatch } = useGame();
   const { blackHole = { level: 1 } } = state;
 
   const handleClick = () => {
-    playButtonSound();
+    playBlackholeClickSound();
     dispatch({ type: 'CLICK_BLACK_HOLE' });
   };
 
@@ -18,7 +18,13 @@ export default function BlackHole() {
     dispatch({ type: 'UPGRADE_BLACK_HOLE' });
   };
 
+  // Calculate upgrade cost: Base cost of 1000 multiplied by 2^(level-1)
+  // This creates exponential cost scaling where each level costs 2x more than the previous
+  // e.g. Level 1: 1000, Level 2: 2000, Level 3: 4000, Level 4: 8000, etc.
   const upgradeCost = Math.floor(1000 * Math.pow(2, blackHole.level - 1));
+  // Calculate click value: Base value of 10 multiplied by 1.5^(level-1)
+  // This creates exponential value scaling where each level gives 1.5x more than the previous
+  // e.g. Level 1: 10, Level 2: 15, Level 3: 22.5, Level 4: 33.75, etc.
   const clickValue = Math.floor(10 * Math.pow(1.5, blackHole.level - 1));
 
   return (

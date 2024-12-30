@@ -5,6 +5,7 @@ const SOUND_EFFECTS = {
   sell: '/sounds/sell.wav',
   unlock: '/sounds/unlock.wav',
   fullAlert: '/sounds/full-alert.wav',
+  blackholeClick: '/sounds/blackhole-click.wav',
 } as const;
 
 const MUSIC_TRACKS = {
@@ -136,4 +137,8 @@ export function playUnlockSound(): void {
 
 export function playFullAlertSound(): void {
   playSound('fullAlert');
+}
+
+export function playBlackholeClickSound() {
+  playSound('blackholeClick');
 } 
