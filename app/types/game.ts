@@ -26,6 +26,7 @@ export interface LoadingDock {
   capacity: number;
   stored: { [key: string]: number };
   level: number;
+  hasManager: boolean;
 }
 
 export interface GlobalUpgrades {

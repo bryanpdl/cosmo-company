@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GameProvider } from './context/GameContext';
 import { Node } from './components/Node';
-import { LoadingDock } from './components/LoadingDock';
+import LoadingDock from './components/LoadingDock';
 import { GlobalUpgrades } from './components/GlobalUpgrades';
 import { Modal } from './components/Modal';
 import { useGame } from './context/GameContext';

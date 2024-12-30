@@ -100,16 +100,23 @@ export async function loadGameState(userId: string): Promise<GameState | null> {
         name: node.material.name
       }));
 
-      // Create migrated state with updated nodes and upgrades
+      // Add hasManager field if it doesn't exist
+      const migratedLoadingDock = {
+        ...savedState.loadingDock,
+        hasManager: 'hasManager' in savedState.loadingDock ? savedState.loadingDock.hasManager : false
+      };
+
+      // Create migrated state with updated nodes, upgrades, and loading dock
       const migratedState = {
         ...savedState,
         globalUpgrades: migratedGlobalUpgrades,
-        nodes: migratedNodes
+        nodes: migratedNodes,
+        loadingDock: migratedLoadingDock
       };
       
       // Save the migrated state back to Firebase to clean up old fields
       await setDoc(gameStateDoc, migratedState);
-      
+
       return migratedState;
     }
     return null;

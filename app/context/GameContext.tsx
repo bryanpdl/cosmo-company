@@ -42,6 +42,7 @@ const initialState: GameState = {
     capacity: 25,
     stored: {},
     level: 1,
+    hasManager: false,
   },
   globalUpgrades: {
     materialValue: {
@@ -68,7 +69,8 @@ type GameAction =
   | { type: 'UPGRADE_DOCK' }
   | { type: 'UPGRADE_GLOBAL'; payload: { upgradeType: GlobalUpgradeType } }
   | { type: 'LOAD_GAME_STATE'; payload: GameState }
-  | { type: 'SAVE_GAME_STATE' };
+  | { type: 'SAVE_GAME_STATE' }
+  | { type: 'PURCHASE_DOCK_MANAGER' };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -226,6 +228,20 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         _shouldSave: false,
       };
+
+    case 'PURCHASE_DOCK_MANAGER': {
+      if (state.money < 500000 || state.loadingDock.hasManager) return state;
+
+      return {
+        ...state,
+        money: state.money - 500000,
+        loadingDock: {
+          ...state.loadingDock,
+          hasManager: true,
+        },
+        _shouldSave: true,
+      };
+    }
 
     default:
       return state;

@@ -4,6 +4,7 @@ const SOUND_EFFECTS = {
   upgrade: '/sounds/upgrade.wav',
   sell: '/sounds/sell.wav',
   unlock: '/sounds/unlock.wav',
+  fullAlert: '/sounds/full-alert.wav',
 } as const;
 
 const MUSIC_TRACKS = {
@@ -131,4 +132,8 @@ export function playSellSound(): void {
 // Utility function to play unlock sound
 export function playUnlockSound(): void {
   playSound('unlock');
+}
+
+export function playFullAlertSound(): void {
+  playSound('fullAlert');
 } 
