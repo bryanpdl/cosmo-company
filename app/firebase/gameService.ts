@@ -1,6 +1,7 @@
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './config';
-import { GameState } from '../types/game';
+import { GameState, Node as GameNode } from '../types/game';
+import { initialNodes } from '../context/GameContext';
 
 export interface SavedGameState extends GameState {
   lastUpdated: any; // FirebaseTimestamp
@@ -84,9 +85,26 @@ export async function loadGameState(userId: string): Promise<GameState | null> {
     if (docSnap.exists()) {
       const data = docSnap.data() as GameState;
       
+      // Ensure all nodes exist by merging with initialNodes
+      const existingNodes = data.nodes || [];
+      const mergedNodes = initialNodes.map((initialNode: GameNode, index: number) => {
+        const existingNode = existingNodes.find(n => n.id === initialNode.id);
+        return existingNode ? {
+          ...existingNode,
+          // Always use the latest name and material data
+          name: initialNode.name,
+          material: initialNode.material
+        } : {
+          ...initialNode,
+          isUnlocked: index === 0,
+          level: { production: 1, value: 1 }
+        };
+      });
+      
       // Initialize or migrate properties for existing users
-      return {
+      const migratedState = {
         ...data,
+        nodes: mergedNodes,
         loadingDock: {
           capacity: data.loadingDock.capacity,
           stored: data.loadingDock.stored,
@@ -95,6 +113,13 @@ export async function loadGameState(userId: string): Promise<GameState | null> {
         },
         blackHole: data.blackHole ?? { level: 1 },
       };
+
+      // If nodes were updated, save the changes
+      if (JSON.stringify(data.nodes) !== JSON.stringify(mergedNodes)) {
+        await saveGameState(userId, migratedState);
+      }
+
+      return migratedState;
     }
     return null;
   } catch (error) {

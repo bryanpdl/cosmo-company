@@ -18,12 +18,20 @@ const materials: Material[] = [
   { id: 'darkMatter', name: 'Dark Matter', baseValue: 80, color: 'fuchsia' },
   { id: 'antimatter', name: 'Antimatter', baseValue: 90, color: 'pink' },
   { id: 'quantumDust', name: 'Quantum Dust', baseValue: 100, color: 'green' },
+  { id: 'cosmicShard', name: 'Cosmic Shard', baseValue: 150, color: 'amber' },
+  { id: 'timeEssence', name: 'Time Essence', baseValue: 200, color: 'orange' },
+  { id: 'voidCrystal', name: 'Void Crystal', baseValue: 300, color: 'violet' },
+  { id: 'starEssence', name: 'Star Essence', baseValue: 450, color: 'yellow' },
+  { id: 'realityFragment', name: 'Reality Fragment', baseValue: 600, color: 'rose' },
+  { id: 'eternityMatter', name: 'Eternity Matter', baseValue: 800, color: 'emerald' },
+  { id: 'infinityDust', name: 'Infinity Dust', baseValue: 1000, color: 'teal' },
+  { id: 'omnipotenceOrb', name: 'Omnipotence Orb', baseValue: 1500, color: 'red' },
 ];
 
 // Initial nodes
-const initialNodes: Node[] = materials.map((material, index) => ({
+export const initialNodes: Node[] = materials.map((material, index) => ({
   id: `node-${index}`,
-  name: `${material.name}`,
+  name: material.name,
   material,
   productionRate: 1,
   valueMultiplier: 1,
