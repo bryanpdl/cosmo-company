@@ -234,11 +234,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
 const GameContext = createContext<{
   state: GameState;
-  dispatch: React.Dispatch<GameAction>;
+  dispatch: (action: GameAction) => Promise<void>;
   isLoading: boolean;
 }>({
   state: initialState,
-  dispatch: () => null,
+  dispatch: async () => {},
   isLoading: true,
 });
 
@@ -247,6 +247,43 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { user, signOutUser } = useAuth();
   const { settings } = useSettings();
+  const currentSessionId = React.useRef(Date.now().toString());
+
+  // Check if this is the most recent session
+  const checkSession = async () => {
+    if (!user) return true;
+    try {
+      const lastSessionRef = doc(db, 'users', user.uid);
+      const lastSessionSnap = await getDoc(lastSessionRef);
+      const lastSessionData = lastSessionSnap.data();
+      
+      if (lastSessionData?.lastSessionId && 
+          lastSessionData.lastSessionId !== currentSessionId.current && 
+          Number(lastSessionData.lastSessionId) > Number(currentSessionId.current)) {
+        console.log('Newer session detected, signing out older session...');
+        signOutUser();
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error checking session:', error);
+      return true;
+    }
+  };
+
+  // Wrap dispatch to check session before processing actions
+  const wrappedDispatch = async (action: GameAction) => {
+    // Skip session check for LOAD_GAME_STATE action
+    if (action.type === 'LOAD_GAME_STATE') {
+      dispatch(action);
+      return;
+    }
+
+    const isCurrentSession = await checkSession();
+    if (isCurrentSession) {
+      dispatch(action);
+    }
+  };
 
   // Load game state when user signs in
   useEffect(() => {
@@ -256,28 +293,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       if (user) {
         try {
-          // Generate a unique session ID for this instance
-          const currentSessionId = Date.now().toString();
-          
           // Set up auth state listener for multiple tabs/windows
           unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser?.uid === user.uid) {
-              // Check if there's a newer session
-              const lastSessionRef = doc(db, 'users', user.uid);
-              const lastSessionSnap = await getDoc(lastSessionRef);
-              const lastSessionData = lastSessionSnap.data();
-              
-              if (lastSessionData?.lastSessionId && 
-                  lastSessionData.lastSessionId !== currentSessionId && 
-                  Number(lastSessionData.lastSessionId) > Number(currentSessionId)) {
-                console.log('Newer session detected, signing out...');
-                signOutUser();
-                return;
-              }
-
               // Update the session ID in Firestore
+              const lastSessionRef = doc(db, 'users', user.uid);
               await setDoc(lastSessionRef, {
-                lastSessionId: currentSessionId
+                lastSessionId: currentSessionId.current
               }, { merge: true });
             }
           });
@@ -339,7 +361,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, state]);
 
   return (
-    <GameContext.Provider value={{ state, dispatch, isLoading }}>
+    <GameContext.Provider value={{ state, dispatch: wrappedDispatch, isLoading }}>
       {children}
     </GameContext.Provider>
   );
