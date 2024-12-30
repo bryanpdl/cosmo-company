@@ -31,19 +31,28 @@ export async function saveGameState(userId: string, gameState: GameState): Promi
   };
 
   try {
-    // Check if there's a more recent save
+    // Check if there's a more recent save with significantly different state
     const currentDoc = await getDoc(gameStateDoc);
     if (currentDoc.exists()) {
       const currentState = currentDoc.data() as SavedGameState;
       if (currentState.clientTimestamp && currentState.clientTimestamp > clientTimestamp) {
-        console.log('Skipping save - more recent state exists');
-        return;
+        // Compare important state values to determine if we should skip
+        const isStateSimilar = 
+          currentState.money === savedState.money &&
+          currentState.loadingDock.level === savedState.loadingDock.level &&
+          JSON.stringify(currentState.nodes) === JSON.stringify(savedState.nodes);
+        
+        if (isStateSimilar) {
+          console.log('Skipping save - more recent state exists and is similar');
+          return;
+        }
       }
     }
 
     console.log('Preparing to save state:', {
       money: savedState.money,
       docksLevel: savedState.loadingDock.level,
+      nodes: savedState.nodes.map(n => ({ id: n.id, level: n.level })),
       timestamp: new Date(clientTimestamp).toISOString()
     });
 
@@ -85,13 +94,23 @@ export async function loadGameState(userId: string): Promise<GameState | null> {
         }
       };
 
-      // Replace the entire globalUpgrades object with the migrated version
-      savedState.globalUpgrades = migratedGlobalUpgrades;
+      // Migrate node names to remove "Generator" suffix
+      const migratedNodes = savedState.nodes.map(node => ({
+        ...node,
+        name: node.material.name
+      }));
+
+      // Create migrated state with updated nodes and upgrades
+      const migratedState = {
+        ...savedState,
+        globalUpgrades: migratedGlobalUpgrades,
+        nodes: migratedNodes
+      };
       
       // Save the migrated state back to Firebase to clean up old fields
-      await setDoc(gameStateDoc, savedState);
+      await setDoc(gameStateDoc, migratedState);
       
-      return savedState;
+      return migratedState;
     }
     return null;
   } catch (error) {

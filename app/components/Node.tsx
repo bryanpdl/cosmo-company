@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Node as NodeType } from '../types/game';
 import { useGame } from '../context/GameContext';
 import { formatNumber } from '../utils/formatters';
+import { FaBolt, FaCoins } from 'react-icons/fa';
 
 interface NodeProps {
   node: NodeType;
@@ -82,11 +83,21 @@ export function Node({ node }: NodeProps) {
         </div>
       ) : (
         <>
-          <h3 className="text-xl font-bold mb-1">{node.name}</h3>
-          <div className="flex gap-2 text-sm text-gray-400 mb-4">
-            <div>Speed Lv.{node.level.production}</div>
-            <div>•</div>
-            <div>Value Lv.{node.level.value}</div>
+          <div className="flex justify-between items-center mb-1">
+            <h3 className="text-xl font-bold">{node.name}</h3>
+            <div className="text-sm text-green-400">
+              ${formatNumber(node.material.baseValue * (1 + (node.level.value - 1) * 0.15) * state.globalUpgrades.materialValue.multiplier)}
+            </div>
+          </div>
+          <div className="flex gap-4 text-sm text-gray-400 mb-4">
+            <div className="flex items-center gap-1">
+              <FaBolt className="text-cyan-400" />
+              Lv.{node.level.production}
+            </div>
+            <div className="flex items-center gap-1">
+              <FaCoins className="text-purple-400" />
+              Lv.{node.level.value}
+            </div>
           </div>
 
           {/* Production Progress */}
@@ -127,7 +138,10 @@ export function Node({ node }: NodeProps) {
               })}
               disabled={state.money < getUpgradeCost('production')}
             >
-              <div className="text-sm font-bold text-gray-300 group-hover:text-white">Speed +</div>
+              <div className="text-sm font-bold text-gray-300 group-hover:text-white flex items-center justify-center gap-1">
+                <FaBolt className="text-cyan-400 group-hover:text-cyan-300" />
+                Speed +
+              </div>
               <div className="text-xs text-cyan-400/75">${formatNumber(getUpgradeCost('production'))}</div>
             </button>
 
@@ -141,7 +155,10 @@ export function Node({ node }: NodeProps) {
               })}
               disabled={state.money < getUpgradeCost('value')}
             >
-              <div className="text-sm font-bold text-gray-300 group-hover:text-white">Value +</div>
+              <div className="text-sm font-bold text-gray-300 group-hover:text-white flex items-center justify-center gap-1">
+                <FaCoins className="text-purple-400 group-hover:text-purple-300" />
+                Value +
+              </div>
               <div className="text-xs text-purple-400/75">${formatNumber(getUpgradeCost('value'))}</div>
             </button>
           </div>

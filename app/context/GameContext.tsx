@@ -18,7 +18,7 @@ const materials: Material[] = [
 // Initial nodes
 const initialNodes: Node[] = materials.map((material, index) => ({
   id: `node-${index}`,
-  name: `${material.name} Generator`,
+  name: `${material.name}`,
   material,
   productionRate: 1,
   valueMultiplier: 1,
@@ -280,7 +280,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     saveGame();
   }, [user, isLoading, state._shouldSave]);
 
-  // Additional backup auto-save every 2 minutes
+  // Additional backup auto-save every 30 seconds
   useEffect(() => {
     if (!user || isLoading) return;
 
@@ -299,13 +299,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Error in auto-save:', error);
       }
-    }, 120 * 1000); // Changed to 2 minutes
+    }, 30 * 1000); // Every 30 seconds
 
     return () => {
       console.log('Auto-save interval cleared');
       clearInterval(saveInterval);
     };
-  }, [user, isLoading]); // Keep interval stable
+  }, [user, isLoading, state]); // Include state in dependencies
 
   // Save game state when user signs out or page unloads
   useEffect(() => {
