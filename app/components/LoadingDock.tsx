@@ -12,7 +12,7 @@ export function LoadingDock() {
   const totalValue = Object.entries(loadingDock.stored).reduce((sum, [materialId, amount]) => {
     const node = nodes.find(n => n.material.id === materialId);
     if (node) {
-      const nodeValueMultiplier = 1 + (node.level.value - 1) * 0.15; // 15% increase per level
+      const nodeValueMultiplier = 1 + (node.level.value - 1) * 0.15;
       const baseValue = node.material.baseValue * amount;
       return sum + (baseValue * nodeValueMultiplier * globalUpgrades.materialValue.multiplier);
     }
@@ -23,10 +23,18 @@ export function LoadingDock() {
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-200">Loading Dock</h2>
-        <div className="text-sm text-gray-400">
-          {totalStored}/{loadingDock.capacity}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-200">Loading Dock</h2>
+          <div className="text-sm text-gray-400">Level {loadingDock.level}</div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <div className="text-sm text-gray-400">
+            {totalStored}/{loadingDock.capacity}
+          </div>
+          {totalStored >= loadingDock.capacity && (
+            <span className="text-xs font-medium text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">FULL</span>
+          )}
         </div>
       </div>
 

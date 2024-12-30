@@ -14,8 +14,8 @@ type SoundEffect = keyof typeof SOUND_EFFECTS;
 type MusicTrack = keyof typeof MUSIC_TRACKS;
 
 // Cache for audio objects
-const audioCache: { [K in SoundEffect]?: HTMLAudioElement } = {};
-const musicCache: { [K in MusicTrack]?: HTMLAudioElement } = {};
+const audioCache: { [key: string]: HTMLAudioElement } = {};
+const musicCache: { [key: string]: HTMLAudioElement } = {};
 
 // Initialize audio objects
 function initializeAudio(effect: SoundEffect): HTMLAudioElement {
@@ -27,16 +27,27 @@ function initializeAudio(effect: SoundEffect): HTMLAudioElement {
   return audioCache[effect]!;
 }
 
-// Initialize music objects
-function initializeMusic(track: MusicTrack): HTMLAudioElement {
-  if (!musicCache[track]) {
-    const audio = new Audio(MUSIC_TRACKS[track]);
-    audio.preload = 'auto';
+// Initialize music
+export function initializeMusic() {
+  if (!musicCache['ambient']) {
+    const audio = new Audio(MUSIC_TRACKS.ambient);
     audio.loop = true;
-    audio.volume = 0.15; // Lower volume for background music
-    musicCache[track] = audio;
+    audio.volume = 0.3;
+    musicCache['ambient'] = audio;
   }
-  return musicCache[track]!;
+  toggleBackgroundMusic(true);
+}
+
+// Toggle background music
+export function toggleBackgroundMusic(enabled: boolean) {
+  const audio = musicCache['ambient'];
+  if (audio) {
+    if (enabled) {
+      audio.play().catch(error => console.error('Error playing music:', error));
+    } else {
+      audio.pause();
+    }
+  }
 }
 
 // Check if sound is enabled in settings
@@ -80,24 +91,6 @@ export function playSound(effect: SoundEffect): void {
     });
   } catch (error) {
     console.error('Error initializing sound:', error);
-  }
-}
-
-// Play or pause background music
-export function toggleBackgroundMusic(shouldPlay: boolean): void {
-  try {
-    const audio = initializeMusic('ambient');
-    
-    if (shouldPlay) {
-      audio.play().catch(error => {
-        console.error('Error playing background music:', error);
-      });
-    } else {
-      audio.pause();
-      audio.currentTime = 0; // Reset to beginning
-    }
-  } catch (error) {
-    console.error('Error handling background music:', error);
   }
 }
 

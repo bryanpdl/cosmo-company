@@ -1,92 +1,83 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { toggleBackgroundMusic, resetAudio } from '../utils/sounds';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { toggleBackgroundMusic, resetAudio, initializeMusic } from '../utils/sounds';
 
-interface Settings {
+type Settings = {
   soundEnabled: boolean;
   musicEnabled: boolean;
   musicInitialized: boolean;
-}
+};
 
-interface SettingsContextType {
+const SettingsContext = createContext<{
   settings: Settings;
   toggleSound: () => void;
   toggleMusic: () => void;
   initializeMusic: () => void;
-}
-
-const defaultSettings: Settings = {
-  soundEnabled: true,
-  musicEnabled: true,
-  musicInitialized: false,
-};
-
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+}>({
+  settings: {
+    soundEnabled: true,
+    musicEnabled: true,
+    musicInitialized: false
+  },
+  toggleSound: () => {},
+  toggleMusic: () => {},
+  initializeMusic: () => {}
+});
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => {
-    // Load settings from localStorage on initial render
-    if (typeof window !== 'undefined') {
-      const savedSettings = localStorage.getItem('gameSettings');
-      if (savedSettings) {
-        try {
-          return JSON.parse(savedSettings);
-        } catch {
-          return defaultSettings;
-        }
-      }
-    }
-    return defaultSettings;
+    // Load settings from localStorage if available
+    const savedSettings = localStorage.getItem('gameSettings');
+    return savedSettings ? JSON.parse(savedSettings) : {
+      soundEnabled: true,
+      musicEnabled: true,
+      musicInitialized: false
+    };
   });
 
-  // Update background music when music settings change
-  useEffect(() => {
-    if (settings.musicInitialized) {
-      toggleBackgroundMusic(settings.musicEnabled);
-    }
-  }, [settings.musicEnabled, settings.musicInitialized]);
-
-  // Save settings to localStorage whenever they change
+  // Save settings to localStorage when they change
   useEffect(() => {
     localStorage.setItem('gameSettings', JSON.stringify(settings));
   }, [settings]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      resetAudio();
-    };
-  }, []);
-
-  const toggleSound = () => {
+  const toggleSound = useCallback(() => {
     setSettings(prev => ({
       ...prev,
       soundEnabled: !prev.soundEnabled
     }));
-  };
+  }, []);
 
-  const toggleMusic = () => {
-    setSettings(prev => ({
-      ...prev,
-      musicEnabled: !prev.musicEnabled
-    }));
-  };
+  const toggleMusic = useCallback(() => {
+    // Only try to play music if it's being enabled
+    if (!settings.musicEnabled) {
+      setSettings(prev => ({
+        ...prev,
+        musicEnabled: true,
+        musicInitialized: true
+      }));
+      initializeMusic();
+    } else {
+      setSettings(prev => ({
+        ...prev,
+        musicEnabled: false
+      }));
+    }
+  }, [settings.musicEnabled]);
 
-  const initializeMusic = () => {
-    if (!settings.musicInitialized) {
+  // Initialize music only after first user interaction
+  const initializeMusicAfterInteraction = useCallback(() => {
+    if (!settings.musicInitialized && settings.musicEnabled) {
+      initializeMusic();
       setSettings(prev => ({
         ...prev,
         musicInitialized: true
       }));
-      if (settings.musicEnabled) {
-        toggleBackgroundMusic(true);
-      }
     }
-  };
+  }, [settings.musicInitialized, settings.musicEnabled]);
 
   return (
-    <SettingsContext.Provider value={{ settings, toggleSound, toggleMusic, initializeMusic }}>
+    <SettingsContext.Provider value={{ settings, toggleSound, toggleMusic, initializeMusic: initializeMusicAfterInteraction }}>
       {children}
     </SettingsContext.Provider>
   );

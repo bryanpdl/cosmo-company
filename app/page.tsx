@@ -23,18 +23,16 @@ function GameContent() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isResearchOpen, setIsResearchOpen] = useState(false);
 
-  // Initialize music when user signs in
-  useEffect(() => {
-    if (user && !settings.musicInitialized) {
-      initializeMusic();
-    }
-  }, [user, settings.musicInitialized, initializeMusic]);
-
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <button
-          onClick={signInWithGoogle}
+          onClick={async () => {
+            await signInWithGoogle();
+            if (!settings.musicInitialized) {
+              initializeMusic();
+            }
+          }}
           className="px-6 py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
                    hover:bg-cyan-500/20 transition-all duration-300 text-gray-300 
                    hover:text-white flex items-center gap-2"

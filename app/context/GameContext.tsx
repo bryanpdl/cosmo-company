@@ -2,7 +2,11 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
 import { GameState, Material, Node, UpgradeType, GlobalUpgradeType } from '../types/game';
 import { useAuth } from './AuthContext';
+import { useSettings } from './SettingsContext';
 import { loadGameState, saveGameState } from '../firebase/gameService';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth, db } from '../firebase/config';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 // Initial materials
 const materials: Material[] = [
@@ -104,10 +108,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         const material = materials.find(m => m.id === materialId);
         const node = state.nodes.find(n => n.material.id === materialId);
         if (material && node) {
-          // Calculate value with node's value level multiplier
-          const nodeValueMultiplier = 1 + (node.level.value - 1) * 0.15; // 15% increase per level
+          const nodeValueMultiplier = 1 + (node.level.value - 1) * 0.15;
           const baseValue = material.baseValue * amount;
-          // Apply both node's value multiplier and global multiplier
           totalValue += baseValue * nodeValueMultiplier * state.globalUpgrades.materialValue.multiplier;
         }
       });
@@ -119,7 +121,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...state.loadingDock,
           stored: {},
         },
-        _shouldSave: true, // Flag to trigger save
+        _shouldSave: true,
       };
     }
 
@@ -128,9 +130,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const targetNode = state.nodes.find(n => n.id === targetNodeId);
       if (!targetNode) return state;
       
-      // Get node index to scale base cost
       const nodeIndex = state.nodes.findIndex(n => n.id === targetNodeId);
-      const baseUpgradeCost = 15 * Math.pow(2, nodeIndex); // Base cost doubles for each node
+      const baseUpgradeCost = 15 * Math.pow(2, nodeIndex);
       const upgradeCost = Math.floor(baseUpgradeCost * Math.pow(1.5, targetNode.level[upgradeType] - 1));
       
       if (state.money < upgradeCost) return state;
@@ -143,7 +144,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             ? {
                 ...node,
                 productionRate: upgradeType === 'production' 
-                  ? 1 + (node.level.production * 0.01) // 1% increase per level
+                  ? 1 + (node.level.production * 0.01)
                   : node.productionRate,
                 level: {
                   ...node.level,
@@ -152,10 +153,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
               }
             : node
         ),
+        _shouldSave: true,
       };
     }
 
-    case 'UNLOCK_NODE':
+    case 'UNLOCK_NODE': {
       const { nodeId: unlockNodeId } = action.payload;
       const nodeToUnlock = state.nodes.find(n => n.id === unlockNodeId);
       if (!nodeToUnlock || nodeToUnlock.isUnlocked || state.money < nodeToUnlock.unlockCost) {
@@ -170,13 +172,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             ? { ...node, isUnlocked: true }
             : node
         ),
+        _shouldSave: true,
       };
+    }
 
-    case 'UPGRADE_DOCK':
+    case 'UPGRADE_DOCK': {
       const dockUpgradeCost = Math.floor(100 * Math.pow(1.5, state.loadingDock.level - 1));
       if (state.money < dockUpgradeCost) return state;
 
-      // Calculate capacity increase with storage optimization multiplier
       const baseCapacityIncrease = 10;
       const optimizedCapacityIncrease = Math.floor(baseCapacityIncrease * state.globalUpgrades.storageOptimization.multiplier);
 
@@ -188,7 +191,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           capacity: state.loadingDock.capacity + optimizedCapacityIncrease,
           level: state.loadingDock.level + 1,
         },
+        _shouldSave: true,
       };
+    }
 
     case 'UPGRADE_GLOBAL': {
       const { upgradeType } = action.payload;
@@ -204,9 +209,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...state.globalUpgrades,
           [upgradeType]: {
             level: currentLevel + 1,
-            multiplier: 1 + (currentLevel * (upgradeType === 'storageOptimization' ? 0.10 : 0.05)), // 10% for storage, 5% for others
+            multiplier: 1 + (currentLevel * (upgradeType === 'storageOptimization' ? 0.10 : 0.05)),
           },
         },
+        _shouldSave: true,
       };
     }
 
@@ -239,20 +245,43 @@ const GameContext = createContext<{
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, { ...initialState, _shouldSave: false });
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
-  const stateRef = React.useRef(state);
-
-  // Keep ref updated with latest state
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+  const { user, signOutUser } = useAuth();
+  const { settings } = useSettings();
 
   // Load game state when user signs in
   useEffect(() => {
+    let unsubscribe: () => void;
+
     async function loadGame() {
       setIsLoading(true);
       if (user) {
         try {
+          // Generate a unique session ID for this instance
+          const currentSessionId = Date.now().toString();
+          
+          // Set up auth state listener for multiple tabs/windows
+          unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser?.uid === user.uid) {
+              // Check if there's a newer session
+              const lastSessionRef = doc(db, 'users', user.uid);
+              const lastSessionSnap = await getDoc(lastSessionRef);
+              const lastSessionData = lastSessionSnap.data();
+              
+              if (lastSessionData?.lastSessionId && 
+                  lastSessionData.lastSessionId !== currentSessionId && 
+                  Number(lastSessionData.lastSessionId) > Number(currentSessionId)) {
+                console.log('Newer session detected, signing out...');
+                signOutUser();
+                return;
+              }
+
+              // Update the session ID in Firestore
+              await setDoc(lastSessionRef, {
+                lastSessionId: currentSessionId
+              }, { merge: true });
+            }
+          });
+
           const savedState = await loadGameState(user.uid);
           if (savedState) {
             dispatch({ type: 'LOAD_GAME_STATE', payload: { ...savedState, _shouldSave: false } });
@@ -265,18 +294,24 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
     
     loadGame();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [user]);
 
-  // Save game state when sell action occurs
+  // Save game state when _shouldSave is true
   useEffect(() => {
     if (!user || isLoading || !state._shouldSave) return;
 
-    console.log('Triggering save after sell action...');
+    console.log('Saving game state...');
     const saveGame = async () => {
       try {
-        const { _shouldSave, ...stateToSave } = stateRef.current;
+        const { _shouldSave, ...stateToSave } = state;
         await saveGameState(user.uid, stateToSave);
-        console.log('Game saved successfully after selling:', new Date().toLocaleTimeString());
+        console.log('Game saved successfully:', new Date().toLocaleTimeString());
         dispatch({ type: 'SAVE_GAME_STATE' });
       } catch (error) {
         console.error('Error saving game state:', error);
@@ -286,39 +321,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     saveGame();
   }, [user, isLoading, state._shouldSave]);
 
-  // Auto-save every 30 seconds
-  useEffect(() => {
-    if (!user || isLoading) return;
-
-    console.log('Auto-save interval started');
-    const saveInterval = setInterval(async () => {
-      if (stateRef.current._shouldSave) {
-        console.log('Skipping auto-save - manual save pending');
-        return;
-      }
-
-      try {
-        const { _shouldSave, ...stateToSave } = stateRef.current;
-        await saveGameState(user.uid, stateToSave);
-        console.log('Auto-save completed:', new Date().toLocaleTimeString());
-      } catch (error) {
-        console.error('Error in auto-save:', error);
-      }
-    }, 30 * 1000);
-
-    return () => {
-      console.log('Auto-save interval cleared');
-      clearInterval(saveInterval);
-    };
-  }, [user, isLoading]);
-
   // Save on unload
   useEffect(() => {
     if (!user || isLoading) return;
 
     const handleBeforeUnload = () => {
       try {
-        const { _shouldSave, ...stateToSave } = stateRef.current;
+        const { _shouldSave, ...stateToSave } = state;
         saveGameState(user.uid, stateToSave);
       } catch (error) {
         console.error('Error saving on unload:', error);
@@ -327,7 +336,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [user, isLoading]);
+  }, [user, isLoading, state]);
 
   return (
     <GameContext.Provider value={{ state, dispatch, isLoading }}>
