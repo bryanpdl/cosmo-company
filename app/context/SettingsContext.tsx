@@ -27,6 +27,15 @@ const SettingsContext = createContext<{
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => {
+    // Only access localStorage in the browser
+    if (typeof window === 'undefined') {
+      return {
+        soundEnabled: true,
+        musicEnabled: true,
+        musicInitialized: false
+      };
+    }
+
     // Load settings from localStorage if available
     const savedSettings = localStorage.getItem('gameSettings');
     return savedSettings ? JSON.parse(savedSettings) : {
@@ -36,9 +45,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     };
   });
 
-  // Save settings to localStorage when they change
+  // Save settings to localStorage when they change (only in browser)
   useEffect(() => {
-    localStorage.setItem('gameSettings', JSON.stringify(settings));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gameSettings', JSON.stringify(settings));
+    }
   }, [settings]);
 
   const toggleSound = useCallback(() => {
