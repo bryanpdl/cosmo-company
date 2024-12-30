@@ -2,37 +2,32 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { formatNumber } from '../utils/formatters';
+import { playUpgradeSound, playSellSound } from '../utils/sounds';
 
 export function LoadingDock() {
   const { state, dispatch } = useGame();
-  const { loadingDock, money } = state;
+  const { money, loadingDock } = state;
 
-  const totalStored = Object.values(loadingDock.stored).reduce((a, b) => a + b, 0);
+  const totalStored = Object.values(loadingDock.stored).reduce((sum, amount) => sum + amount, 0);
   const percentFull = (totalStored / loadingDock.capacity) * 100;
 
   const getDockUpgradeCost = () => {
     return Math.floor(100 * Math.pow(1.5, loadingDock.level - 1));
   };
 
-  const getMaterialName = (materialId: string) => {
-    const node = state.nodes.find(n => n.material.id === materialId);
-    return node?.material.name || materialId;
+  const handleUpgrade = () => {
+    if (money >= getDockUpgradeCost()) {
+      playUpgradeSound();
+      dispatch({ type: 'UPGRADE_DOCK' });
+    }
   };
 
-  const getMaterialValue = (materialId: string, amount: number) => {
-    const material = state.nodes.find(n => n.material.id === materialId)?.material;
-    const node = state.nodes.find(n => n.material.id === materialId);
-    if (!material || !node) return 0;
-    
-    // Calculate value with node's value level multiplier
-    const nodeValueMultiplier = 1 + (node.level.value - 1) * 0.15; // 15% increase per level
-    const baseValue = material.baseValue * amount;
-    // Apply both node's value multiplier and global multiplier
-    return baseValue * nodeValueMultiplier * state.globalUpgrades.materialValue.multiplier;
+  const handleSell = () => {
+    if (totalStored > 0) {
+      playSellSound();
+      dispatch({ type: 'SELL_MATERIALS' });
+    }
   };
-
-  const totalValue = Object.entries(loadingDock.stored).reduce((total, [materialId, amount]) => 
-    total + getMaterialValue(materialId, amount), 0);
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
@@ -42,7 +37,7 @@ export function LoadingDock() {
           className="px-4 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
                    hover:bg-cyan-500/20 transition-all duration-300 disabled:opacity-50 
                    disabled:cursor-not-allowed"
-          onClick={() => dispatch({ type: 'UPGRADE_DOCK' })}
+          onClick={handleUpgrade}
           disabled={money < getDockUpgradeCost()}
         >
           <div className="text-sm font-bold text-gray-300">Upgrade</div>
@@ -64,31 +59,29 @@ export function LoadingDock() {
       </div>
 
       {/* Materials List */}
-      <div className="space-y-2">
-        {Object.entries(loadingDock.stored).map(([materialId, amount]) => (
-          <div key={materialId} className="flex justify-between items-center">
-            <span className="text-gray-400">{getMaterialName(materialId)}</span>
-            <span className="text-gray-300">{amount}</span>
-          </div>
-        ))}
+      <div className="space-y-2 mb-4">
+        {Object.entries(loadingDock.stored).map(([materialId, amount]) => {
+          const material = state.nodes.find(n => n.material.id === materialId)?.material;
+          if (!material || amount === 0) return null;
+          return (
+            <div key={materialId} className="flex justify-between items-center text-sm">
+              <span className={`text-${material.color}-400`}>{material.name}</span>
+              <span className="text-gray-400">{amount}</span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Total Value */}
-      <div className="mt-4 pt-4 border-t border-gray-700">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-400">Total Value:</span>
-          <span className="text-green-400">${formatNumber(totalValue)}</span>
-        </div>
-        <button
-          className="w-full mt-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/30 
-                   hover:bg-green-500/20 transition-all duration-300 disabled:opacity-50 
-                   disabled:cursor-not-allowed"
-          onClick={() => dispatch({ type: 'SELL_MATERIALS' })}
-          disabled={totalStored === 0}
-        >
-          Sell All Materials
-        </button>
-      </div>
+      {/* Sell Button */}
+      <button
+        className="w-full py-2 rounded-lg bg-green-500/10 border border-green-500/30 
+                 hover:bg-green-500/20 transition-all duration-300 disabled:opacity-50 
+                 disabled:cursor-not-allowed"
+        onClick={handleSell}
+        disabled={totalStored === 0}
+      >
+        <div className="text-sm font-bold text-gray-300">Sell All Materials</div>
+      </button>
     </div>
   );
 } 

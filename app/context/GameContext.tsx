@@ -1,3 +1,4 @@
+'use client';
 import React, { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
 import { GameState, Material, Node, UpgradeType, GlobalUpgradeType } from '../types/game';
 import { useAuth } from './AuthContext';
@@ -239,8 +240,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, { ...initialState, _shouldSave: false });
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  
-  // Load game state when user signs in or component mounts
+  const stateRef = React.useRef(state);
+
+  // Keep ref updated with latest state
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  // Load game state when user signs in
   useEffect(() => {
     async function loadGame() {
       setIsLoading(true);
@@ -267,10 +274,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     console.log('Triggering save after sell action...');
     const saveGame = async () => {
       try {
-        const { _shouldSave, ...stateToSave } = state;
+        const { _shouldSave, ...stateToSave } = stateRef.current;
         await saveGameState(user.uid, stateToSave);
         console.log('Game saved successfully after selling:', new Date().toLocaleTimeString());
-        // Reset the save flag after successful save
         dispatch({ type: 'SAVE_GAME_STATE' });
       } catch (error) {
         console.error('Error saving game state:', error);
@@ -280,41 +286,39 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     saveGame();
   }, [user, isLoading, state._shouldSave]);
 
-  // Additional backup auto-save every 30 seconds
+  // Auto-save every 30 seconds
   useEffect(() => {
     if (!user || isLoading) return;
 
     console.log('Auto-save interval started');
     const saveInterval = setInterval(async () => {
-      // Don't auto-save if a manual save is pending
-      if (state._shouldSave) {
+      if (stateRef.current._shouldSave) {
         console.log('Skipping auto-save - manual save pending');
         return;
       }
 
       try {
-        const { _shouldSave, ...stateToSave } = state;
+        const { _shouldSave, ...stateToSave } = stateRef.current;
         await saveGameState(user.uid, stateToSave);
         console.log('Auto-save completed:', new Date().toLocaleTimeString());
       } catch (error) {
         console.error('Error in auto-save:', error);
       }
-    }, 30 * 1000); // Every 30 seconds
+    }, 30 * 1000);
 
     return () => {
       console.log('Auto-save interval cleared');
       clearInterval(saveInterval);
     };
-  }, [user, isLoading, state]); // Include state in dependencies
+  }, [user, isLoading]);
 
-  // Save game state when user signs out or page unloads
+  // Save on unload
   useEffect(() => {
     if (!user || isLoading) return;
 
     const handleBeforeUnload = () => {
-      // Synchronous save attempt for page unload
       try {
-        const { _shouldSave, ...stateToSave } = state;
+        const { _shouldSave, ...stateToSave } = stateRef.current;
         saveGameState(user.uid, stateToSave);
       } catch (error) {
         console.error('Error saving on unload:', error);
@@ -323,7 +327,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [user, state, isLoading]);
+  }, [user, isLoading]);
 
   return (
     <GameContext.Provider value={{ state, dispatch, isLoading }}>

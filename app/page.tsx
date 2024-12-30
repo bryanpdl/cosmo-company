@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GameProvider } from './context/GameContext';
 import { Node } from './components/Node';
@@ -9,16 +9,42 @@ import { GlobalUpgrades } from './components/GlobalUpgrades';
 import { Modal } from './components/Modal';
 import { useGame } from './context/GameContext';
 import { formatNumber } from './utils/formatters';
-import { FaFlask, FaUserAstronaut, FaCog, FaSignInAlt } from 'react-icons/fa';
+import { FaFlask, FaUserAstronaut, FaVolumeMute, FaVolumeUp, FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
 import { ParticleBackground } from './components/ParticleBackground';
+import { useSettings } from './context/SettingsContext';
+import { playButtonSound } from './utils/sounds';
 
 function GameContent() {
   const { state, isLoading } = useGame();
   const { user, signInWithGoogle, signOutUser } = useAuth();
+  const { settings, toggleSound, initializeMusic, toggleMusic } = useSettings();
   const { nodes, money } = state;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isResearchOpen, setIsResearchOpen] = useState(false);
+
+  // Initialize music when user signs in
+  useEffect(() => {
+    if (user && !settings.musicInitialized) {
+      initializeMusic();
+    }
+  }, [user, settings.musicInitialized, initializeMusic]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <button
+          onClick={signInWithGoogle}
+          className="px-6 py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
+                   hover:bg-cyan-500/20 transition-all duration-300 text-gray-300 
+                   hover:text-white flex items-center gap-2"
+        >
+          <FaUserAstronaut className="text-xl" />
+          Sign In with Google
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -64,7 +90,10 @@ function GameContent() {
         <div className="flex items-center gap-4">
           {/* Research Button */}
           <button
-            onClick={() => setIsResearchOpen(true)}
+            onClick={() => {
+              playButtonSound();
+              setIsResearchOpen(true);
+            }}
             className="px-4 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
                      hover:bg-cyan-500/20 transition-all duration-300 text-gray-300 
                      hover:text-white flex items-center gap-2"
@@ -76,7 +105,10 @@ function GameContent() {
           {/* Avatar & Dropdown */}
           <div className="relative">
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={() => {
+                playButtonSound();
+                setIsDropdownOpen(!isDropdownOpen);
+              }}
               className="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-700 hover:border-cyan-500/50 
                        transition-colors duration-300 flex items-center justify-center"
             >
@@ -92,43 +124,40 @@ function GameContent() {
             </button>
             
             {isDropdownOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute right-0 mt-2 w-48 py-2 bg-gray-800 rounded-lg border border-gray-700 shadow-xl z-50"
-              >
-                {user ? (
-                  <>
-                    <div className="px-4 py-2 text-sm text-gray-400">
-                      {user.displayName}
-                    </div>
-                    <div className="border-t border-gray-700 my-1"></div>
-                    <button
-                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700/50 transition-colors flex items-center gap-2"
-                      onClick={signOutUser}
-                    >
-                      <FaSignInAlt className="text-lg" />
-                      Sign Out
-                    </button>
-                  </>
-                ) : (
+              <div className="absolute z-50 right-0 mt-2 w-48 rounded-lg shadow-lg bg-gray-800/90 backdrop-blur-sm border border-gray-700">
+                <div className="py-1">
                   <button
-                    className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700/50 transition-colors flex items-center gap-2"
-                    onClick={signInWithGoogle}
+                    onClick={() => {
+                      playButtonSound();
+                      toggleSound();
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors duration-200"
                   >
-                    <FaSignInAlt className="text-lg" />
-                    Sign In with Google
+                    {settings.soundEnabled ? <FaVolumeUp className="text-cyan-400" /> : <FaVolumeMute className="text-gray-400" />}
+                    {settings.soundEnabled ? 'Effects On' : 'Effects Off'}
                   </button>
-                )}
-                <div className="border-t border-gray-700 my-1"></div>
-                <button
-                  className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700/50 transition-colors flex items-center gap-2"
-                  onClick={() => {/* Settings handler */}}
-                >
-                  <FaCog className="text-lg" />
-                  Settings
-                </button>
-              </motion.div>
+                  <button
+                    onClick={() => {
+                      playButtonSound();
+                      toggleMusic();
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors duration-200"
+                  >
+                    {settings.musicEnabled ? <FaVolumeUp className="text-purple-400" /> : <FaVolumeMute className="text-gray-400" />}
+                    {settings.musicEnabled ? 'Music On' : 'Music Off'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      playButtonSound();
+                      signOutUser();
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors duration-200"
+                  >
+                    <FaSignOutAlt className="text-red-400" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

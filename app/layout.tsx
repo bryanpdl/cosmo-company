@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Oxanium } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
+import { GameProvider } from './context/GameContext';
+import { SettingsProvider } from './context/SettingsContext';
 
 const oxanium = Oxanium({ subsets: ["latin"] });
 
@@ -19,7 +21,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${oxanium.className} bg-[#16141A] text-white min-h-screen`}>
         <AuthProvider>
-          {children}
+          <SettingsProvider>
+            <GameProvider>
+              {children}
+            </GameProvider>
+          </SettingsProvider>
         </AuthProvider>
       </body>
     </html>

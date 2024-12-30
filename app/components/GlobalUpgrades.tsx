@@ -4,6 +4,7 @@ import { useGame } from '../context/GameContext';
 import { GlobalUpgradeType } from '../types/game';
 import { formatNumber } from '../utils/formatters';
 import { IoChevronDown } from 'react-icons/io5';
+import { playButtonSound, playUpgradeSound } from '../utils/sounds';
 
 interface UpgradeCardProps {
   title: string;
@@ -27,11 +28,21 @@ function UpgradeCard({ title, description, type, level, multiplier, isOpen, onTo
     return 1 + ((level) * baseIncrease);
   };
 
+  const handleUpgrade = () => {
+    if (state.money >= getUpgradeCost()) {
+      playUpgradeSound();
+      dispatch({ type: 'UPGRADE_GLOBAL', payload: { upgradeType: type } });
+    }
+  };
+
   return (
     <div className="bg-gray-800/50 rounded-lg border border-gray-700">
       <button
         className="w-full px-4 py-3 flex items-center justify-between text-left"
-        onClick={onToggle}
+        onClick={() => {
+          playButtonSound();
+          onToggle();
+        }}
       >
         <div>
           <h3 className="text-lg font-bold text-gray-300">{title}</h3>
@@ -68,7 +79,7 @@ function UpgradeCard({ title, description, type, level, multiplier, isOpen, onTo
                 className="w-full mt-3 px-4 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
                          hover:bg-cyan-500/20 transition-all duration-300 disabled:opacity-50 
                          disabled:cursor-not-allowed"
-                onClick={() => dispatch({ type: 'UPGRADE_GLOBAL', payload: { upgradeType: type } })}
+                onClick={handleUpgrade}
                 disabled={state.money < getUpgradeCost()}
               >
                 <div className="text-sm font-bold text-gray-300">Upgrade</div>

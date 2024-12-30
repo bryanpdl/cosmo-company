@@ -4,6 +4,7 @@ import { Node as NodeType } from '../types/game';
 import { useGame } from '../context/GameContext';
 import { formatNumber } from '../utils/formatters';
 import { FaBolt, FaCoins } from 'react-icons/fa';
+import { playUpgradeSound, playUnlockSound } from '../utils/sounds';
 
 interface NodeProps {
   node: NodeType;
@@ -56,6 +57,23 @@ export function Node({ node }: NodeProps) {
     };
   }, [node, dispatch]);
 
+  const handleUnlock = () => {
+    if (state.money >= node.unlockCost) {
+      playUnlockSound();
+      dispatch({ type: 'UNLOCK_NODE', payload: { nodeId: node.id } });
+    }
+  };
+
+  const handleUpgrade = (upgradeType: 'production' | 'value') => {
+    if (state.money >= getUpgradeCost(upgradeType)) {
+      playUpgradeSound();
+      dispatch({
+        type: 'UPGRADE_NODE',
+        payload: { nodeId: node.id, upgradeType }
+      });
+    }
+  };
+
   return (
     <motion.div
       className="relative p-4 rounded-lg bg-gray-800/50 backdrop-blur-sm border border-gray-700"
@@ -72,7 +90,7 @@ export function Node({ node }: NodeProps) {
                         ? 'bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/20 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]' 
                         : 'bg-gray-700/30 border-gray-600/30 hover:bg-gray-700/50'} 
                       disabled:opacity-50 disabled:cursor-not-allowed`}
-            onClick={() => dispatch({ type: 'UNLOCK_NODE', payload: { nodeId: node.id } })}
+            onClick={handleUnlock}
             disabled={state.money < node.unlockCost}
           >
             <div className="text-sm font-bold text-gray-300">Unlock</div>
@@ -132,10 +150,7 @@ export function Node({ node }: NodeProps) {
               className="px-4 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
                        hover:bg-cyan-500/20 transition-all duration-300 disabled:opacity-50 
                        disabled:cursor-not-allowed group"
-              onClick={() => dispatch({
-                type: 'UPGRADE_NODE',
-                payload: { nodeId: node.id, upgradeType: 'production' }
-              })}
+              onClick={() => handleUpgrade('production')}
               disabled={state.money < getUpgradeCost('production')}
             >
               <div className="text-sm font-bold text-gray-300 group-hover:text-white flex items-center justify-center gap-1">
@@ -149,10 +164,7 @@ export function Node({ node }: NodeProps) {
               className="px-4 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 
                        hover:bg-purple-500/20 transition-all duration-300 disabled:opacity-50 
                        disabled:cursor-not-allowed group"
-              onClick={() => dispatch({
-                type: 'UPGRADE_NODE',
-                payload: { nodeId: node.id, upgradeType: 'value' }
-              })}
+              onClick={() => handleUpgrade('value')}
               disabled={state.money < getUpgradeCost('value')}
             >
               <div className="text-sm font-bold text-gray-300 group-hover:text-white flex items-center justify-center gap-1">
