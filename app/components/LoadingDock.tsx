@@ -60,7 +60,7 @@ export default function LoadingDock() {
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg p-4">
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start mb-2">
         <div>
           <h2 className="text-xl font-bold text-gray-200">Loading Dock</h2>
           <div className="text-sm text-gray-400">Level {loadingDock.level}</div>
@@ -74,6 +74,19 @@ export default function LoadingDock() {
           )}
         </div>
       </div>
+
+      {/* Storage Progress Bar */}
+      <div className="w-full h-2 bg-gray-700/50 rounded-full mb-4 overflow-hidden">
+        <div 
+          className="h-full bg-cyan-500/50 rounded-full transition-all duration-300"
+          style={{ 
+            width: `${Math.min((totalStored / loadingDock.capacity) * 100, 100)}%`,
+            backgroundColor: totalStored >= loadingDock.capacity ? 'rgb(239 68 68 / 0.5)' : undefined
+          }}
+        />
+      </div>
+
+      
 
       {/* Materials List */}
       <div className="space-y-2 mb-4">

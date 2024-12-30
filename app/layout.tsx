@@ -8,7 +8,7 @@ import { SettingsProvider } from './context/SettingsContext';
 const oxanium = Oxanium({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Space Factory Tycoon",
+  title: "Cosmo Co.",
   description: "A futuristic space factory idle game",
 };
 
