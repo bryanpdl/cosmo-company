@@ -21,7 +21,7 @@ export default function LoadingDock() {
   }, 0);
 
   // Calculate payload boost based on storage level
-  const payloadBoostMultiplier = 1 + (Math.floor(loadingDock.level / 10) * 0.05);
+  const payloadBoostMultiplier = 1 + (Math.floor(loadingDock.level / 1) * 0.01);
   const boostedValue = totalValue * payloadBoostMultiplier;
 
   const totalStored = Object.values(loadingDock.stored).reduce((sum, amount) => sum + amount, 0);

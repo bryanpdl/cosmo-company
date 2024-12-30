@@ -122,7 +122,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       });
 
       // Apply payload boost
-      const payloadBoostMultiplier = 1 + (Math.floor(state.loadingDock.level / 10) * 0.05);
+      const payloadBoostMultiplier = 1 + (Math.floor(state.loadingDock.level / 1) * 0.01);
       const boostedValue = totalValue * payloadBoostMultiplier;
 
       return {
