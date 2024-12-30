@@ -77,52 +77,27 @@ export async function saveGameState(userId: string, gameState: GameState): Promi
 }
 
 export async function loadGameState(userId: string): Promise<GameState | null> {
-  const gameStateDoc = doc(db, 'users', userId, 'gameState', 'current');
-  
   try {
-    const docSnap = await getDoc(gameStateDoc);
+    const docRef = doc(db, 'users', userId, 'gameState', 'current');
+    const docSnap = await getDoc(docRef);
+    
     if (docSnap.exists()) {
-      const savedState = docSnap.data() as SavedGameState;
+      const data = docSnap.data() as GameState;
       
-      // Migrate old states to include new upgrades and remove deprecated ones
-      const migratedGlobalUpgrades = {
-        materialValue: savedState.globalUpgrades.materialValue,
-        nodeEfficiency: savedState.globalUpgrades.nodeEfficiency,
-        storageOptimization: savedState.globalUpgrades.storageOptimization || {
-          level: 1,
-          multiplier: 1,
-        }
+      // Initialize or migrate properties for existing users
+      return {
+        ...data,
+        loadingDock: {
+          ...data.loadingDock,
+          hasManager: data.loadingDock.hasManager ?? false,
+        },
+        blackHole: data.blackHole ?? { level: 1 },
       };
-
-      // Migrate node names to remove "Generator" suffix
-      const migratedNodes = savedState.nodes.map(node => ({
-        ...node,
-        name: node.material.name
-      }));
-
-      // Add hasManager field if it doesn't exist
-      const migratedLoadingDock = {
-        ...savedState.loadingDock,
-        hasManager: 'hasManager' in savedState.loadingDock ? savedState.loadingDock.hasManager : false
-      };
-
-      // Create migrated state with updated nodes, upgrades, and loading dock
-      const migratedState = {
-        ...savedState,
-        globalUpgrades: migratedGlobalUpgrades,
-        nodes: migratedNodes,
-        loadingDock: migratedLoadingDock
-      };
-      
-      // Save the migrated state back to Firebase to clean up old fields
-      await setDoc(gameStateDoc, migratedState);
-
-      return migratedState;
     }
     return null;
   } catch (error) {
     console.error('Error loading game state:', error);
-    throw error;
+    return null;
   }
 }
 

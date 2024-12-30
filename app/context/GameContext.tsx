@@ -58,6 +58,9 @@ const initialState: GameState = {
       multiplier: 1,
     },
   },
+  blackHole: {
+    level: 1,
+  },
 };
 
 // Add to GameAction type at the top
@@ -70,7 +73,9 @@ type GameAction =
   | { type: 'UPGRADE_GLOBAL'; payload: { upgradeType: GlobalUpgradeType } }
   | { type: 'LOAD_GAME_STATE'; payload: GameState }
   | { type: 'SAVE_GAME_STATE' }
-  | { type: 'PURCHASE_DOCK_MANAGER' };
+  | { type: 'PURCHASE_DOCK_MANAGER' }
+  | { type: 'CLICK_BLACK_HOLE' }
+  | { type: 'UPGRADE_BLACK_HOLE' };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -238,6 +243,29 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         loadingDock: {
           ...state.loadingDock,
           hasManager: true,
+        },
+        _shouldSave: true,
+      };
+    }
+
+    case 'CLICK_BLACK_HOLE': {
+      const clickValue = Math.floor(10 * Math.pow(1.5, state.blackHole.level - 1));
+      return {
+        ...state,
+        money: state.money + clickValue,
+      };
+    }
+
+    case 'UPGRADE_BLACK_HOLE': {
+      const upgradeCost = Math.floor(1000 * Math.pow(2, state.blackHole.level - 1));
+      if (state.money < upgradeCost) return state;
+
+      return {
+        ...state,
+        money: state.money - upgradeCost,
+        blackHole: {
+          ...state.blackHole,
+          level: state.blackHole.level + 1,
         },
         _shouldSave: true,
       };

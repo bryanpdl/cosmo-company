@@ -14,6 +14,7 @@ import { useAuth } from './context/AuthContext';
 import { ParticleBackground } from './components/ParticleBackground';
 import { useSettings } from './context/SettingsContext';
 import { playButtonSound } from './utils/sounds';
+import BlackHole from './components/BlackHole';
 
 function GameContent() {
   const { state, isLoading } = useGame();
@@ -72,7 +73,7 @@ function GameContent() {
             animate={{ y: 0, opacity: 1 }}
             style={{ animation: 'gradientMove 3s linear infinite' }}
           >
-            Cosmo Company
+            Cosmo Co.
           </motion.h1>
           <motion.div
             className="text-2xl font-bold mt-2 text-left"
@@ -162,16 +163,21 @@ function GameContent() {
       </div>
 
       {/* Main Game Area */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Nodes Grid */}
-        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Black Hole - Left column on desktop */}
+        <div className="lg:col-span-2 lg:order-1">
+          <BlackHole />
+        </div>
+
+        {/* Nodes Grid - Middle columns on desktop */}
+        <div className="lg:col-span-7 lg:order-2 grid grid-cols-1 md:grid-cols-2 gap-6">
           {nodes.map((node) => (
             <Node key={node.id} node={node} />
           ))}
         </div>
 
-        {/* Loading Dock */}
-        <div className="lg:col-span-1">
+        {/* Loading Dock - Right column on desktop, first on mobile */}
+        <div className="lg:col-span-3 lg:order-3 order-first">
           <LoadingDock />
         </div>
       </div>

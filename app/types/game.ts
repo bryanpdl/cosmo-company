@@ -44,11 +44,16 @@ export interface GlobalUpgrades {
   };
 }
 
+export interface BlackHole {
+  level: number;
+}
+
 export interface GameState {
   money: number;
   nodes: Node[];
   loadingDock: LoadingDock;
   globalUpgrades: GlobalUpgrades;
+  blackHole: BlackHole;
   _shouldSave?: boolean;
 }
 
@@ -60,4 +65,7 @@ export type GameAction =
   | { type: 'UPGRADE_DOCK' }
   | { type: 'UPGRADE_GLOBAL'; payload: { upgradeType: GlobalUpgradeType } }
   | { type: 'LOAD_GAME_STATE'; payload: GameState }
-  | { type: 'SAVE_GAME_STATE' }; 
+  | { type: 'SAVE_GAME_STATE' }
+  | { type: 'PURCHASE_DOCK_MANAGER' }
+  | { type: 'CLICK_BLACK_HOLE' }
+  | { type: 'UPGRADE_BLACK_HOLE' }; 
