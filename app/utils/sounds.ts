@@ -18,6 +18,9 @@ type MusicTrack = keyof typeof MUSIC_TRACKS;
 // Cache for audio objects
 const audioCache: { [key: string]: HTMLAudioElement } = {};
 const musicCache: { [key: string]: HTMLAudioElement } = {};
+let audioContext: AudioContext | null = null;
+let musicSource: MediaElementAudioSourceNode | null = null;
+let gainNode: GainNode | null = null;
 
 // Initialize audio objects
 function initializeAudio(effect: SoundEffect): HTMLAudioElement {
@@ -34,20 +37,49 @@ export function initializeMusic() {
   if (!musicCache['ambient']) {
     const audio = new Audio(MUSIC_TRACKS.ambient);
     audio.loop = true;
-    audio.volume = 0.3;
+    audio.crossOrigin = 'anonymous';
     musicCache['ambient'] = audio;
+
+    // Create audio context
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    musicSource = audioContext.createMediaElementSource(audio);
+    gainNode = audioContext.createGain();
+    gainNode.gain.value = 0;
+
+    // Connect nodes
+    musicSource.connect(gainNode);
+    gainNode.connect(audioContext.destination);
   }
-  toggleBackgroundMusic(true);
+
+  const audio = musicCache['ambient'];
+  if (audioContext?.state === 'suspended') {
+    audioContext.resume();
+  }
+  
+  audio.play();
+  if (gainNode) {
+    gainNode.gain.setValueAtTime(0, audioContext!.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.45, audioContext!.currentTime + 2);
+  }
 }
 
 // Toggle background music
 export function toggleBackgroundMusic(enabled: boolean) {
   const audio = musicCache['ambient'];
-  if (audio) {
+  if (audio && gainNode && audioContext) {
     if (enabled) {
-      audio.play().catch(error => console.error('Error playing music:', error));
+      if (audio.paused) {
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        audio.play();
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.45, audioContext.currentTime + 2);
+      }
     } else {
-      audio.pause();
+      gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.5);
+      setTimeout(() => audio.pause(), 500);
     }
   }
 }

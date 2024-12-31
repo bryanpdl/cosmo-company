@@ -19,7 +19,7 @@ import BlackHole from './components/BlackHole';
 function GameContent() {
   const { state, isLoading } = useGame();
   const { user, signInWithGoogle, signOutUser } = useAuth();
-  const { settings, toggleSound, initializeMusic, toggleMusic } = useSettings();
+  const { settings, toggleSound, toggleMusic } = useSettings();
   const { nodes, money } = state;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isResearchOpen, setIsResearchOpen] = useState(false);
@@ -30,9 +30,6 @@ function GameContent() {
         <button
           onClick={async () => {
             await signInWithGoogle();
-            if (!settings.musicInitialized) {
-              initializeMusic();
-            }
           }}
           className="px-6 py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
                    hover:bg-cyan-500/20 transition-all duration-300 text-gray-300 

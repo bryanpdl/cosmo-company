@@ -7,7 +7,6 @@ import { loadGameState, saveGameState } from '../firebase/gameService';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { initializeMusic } from '../utils/sounds';
 
 // Initial materials
 const materials: Material[] = [
@@ -390,10 +389,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           const savedState = await loadGameState(user.uid);
           if (savedState) {
             dispatch({ type: 'LOAD_GAME_STATE', payload: { ...savedState, _shouldSave: false } });
-            // Initialize and start playing background music
-            if (settings.musicEnabled) {
-              initializeMusic();
-            }
           }
         } catch (error) {
           console.error('Error loading game state:', error);
@@ -409,7 +404,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         unsubscribe();
       }
     };
-  }, [user, settings.musicEnabled]);
+  }, [user]);
 
   // Save game state when _shouldSave is true
   useEffect(() => {

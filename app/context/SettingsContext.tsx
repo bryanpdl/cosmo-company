@@ -6,23 +6,19 @@ import { toggleBackgroundMusic, resetAudio, initializeMusic } from '../utils/sou
 type Settings = {
   soundEnabled: boolean;
   musicEnabled: boolean;
-  musicInitialized: boolean;
 };
 
 const SettingsContext = createContext<{
   settings: Settings;
   toggleSound: () => void;
   toggleMusic: () => void;
-  initializeMusic: () => void;
 }>({
   settings: {
     soundEnabled: true,
-    musicEnabled: true,
-    musicInitialized: false
+    musicEnabled: false
   },
   toggleSound: () => {},
-  toggleMusic: () => {},
-  initializeMusic: () => {}
+  toggleMusic: () => {}
 });
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -31,8 +27,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined') {
       return {
         soundEnabled: true,
-        musicEnabled: true,
-        musicInitialized: false
+        musicEnabled: false
       };
     }
 
@@ -40,8 +35,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const savedSettings = localStorage.getItem('gameSettings');
     return savedSettings ? JSON.parse(savedSettings) : {
       soundEnabled: true,
-      musicEnabled: true,
-      musicInitialized: false
+      musicEnabled: false
     };
   });
 
@@ -60,35 +54,25 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleMusic = useCallback(() => {
-    // Only try to play music if it's being enabled
     if (!settings.musicEnabled) {
+      // Turning music on
       setSettings(prev => ({
         ...prev,
-        musicEnabled: true,
-        musicInitialized: true
+        musicEnabled: true
       }));
       initializeMusic();
     } else {
+      // Turning music off
       setSettings(prev => ({
         ...prev,
         musicEnabled: false
       }));
+      toggleBackgroundMusic(false);
     }
   }, [settings.musicEnabled]);
 
-  // Initialize music only after first user interaction
-  const initializeMusicAfterInteraction = useCallback(() => {
-    if (!settings.musicInitialized && settings.musicEnabled) {
-      initializeMusic();
-      setSettings(prev => ({
-        ...prev,
-        musicInitialized: true
-      }));
-    }
-  }, [settings.musicInitialized, settings.musicEnabled]);
-
   return (
-    <SettingsContext.Provider value={{ settings, toggleSound, toggleMusic, initializeMusic: initializeMusicAfterInteraction }}>
+    <SettingsContext.Provider value={{ settings, toggleSound, toggleMusic }}>
       {children}
     </SettingsContext.Provider>
   );
