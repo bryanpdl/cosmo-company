@@ -2,7 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { formatNumber } from '../utils/formatters';
-import { playUpgradeSound, playSellSound, playFullAlertSound } from '../utils/sounds';
+import { playUpgradeSound, playSellSound, playFullAlertSound, playGemEarnedSound } from '../utils/sounds';
+import { FaGem } from 'react-icons/fa';
 
 export default function LoadingDock() {
   const { state, dispatch } = useGame();
@@ -10,19 +11,20 @@ export default function LoadingDock() {
   const wasFullRef = useRef(false);
 
   // Calculate total value of stored materials
-  const totalValue = Object.entries(loadingDock.stored).reduce((sum, [materialId, amount]) => {
+  let totalValue = 0;
+  Object.entries(loadingDock.stored).forEach(([materialId, amount]) => {
     const node = nodes.find(n => n.material.id === materialId);
     if (node) {
       const nodeValueMultiplier = 1 + (node.level.value - 1) * 0.15;
       const baseValue = node.material.baseValue * amount;
-      return sum + (baseValue * nodeValueMultiplier * globalUpgrades.materialValue.multiplier);
+      totalValue += baseValue * nodeValueMultiplier * globalUpgrades.materialValue.multiplier;
     }
-    return sum;
-  }, 0);
+  });
 
-  // Calculate payload boost based on storage level
-  const payloadBoostMultiplier = 1 + ((loadingDock.level - 1) * 0.01);
+  const payloadBoostMultiplier = 1 + (Math.floor(loadingDock.level / 1) * 0.01);
   const boostedValue = totalValue * payloadBoostMultiplier;
+  const gemsToEarn = Math.floor(boostedValue / 250000);
+  const gemProgress = (boostedValue % 250000) / 250000;
 
   const totalStored = Object.values(loadingDock.stored).reduce((sum, amount) => sum + amount, 0);
   const isFull = totalStored >= loadingDock.capacity;
@@ -37,10 +39,11 @@ export default function LoadingDock() {
 
   // Handle selling materials
   const handleSell = () => {
-    if (totalStored > 0) {
-      playSellSound();
-      dispatch({ type: 'SELL_MATERIALS' });
+    if (gemsToEarn > 0) {
+      playGemEarnedSound();
     }
+    playSellSound();
+    dispatch({ type: 'SELL_MATERIALS' });
   };
 
   // Handle upgrading dock capacity
@@ -115,15 +118,31 @@ export default function LoadingDock() {
 
       {/* Actions */}
       <div className="space-y-2">
-        <button
-          onClick={handleSell}
-          disabled={totalStored === 0}
-          className="w-full px-4 py-2 rounded bg-cyan-500/10 border border-cyan-500/30 
-                    hover:bg-cyan-500/20 transition-all duration-300 text-gray-300 
-                    hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Sell All (${formatNumber(boostedValue)})
-        </button>
+        <div className="w-full space-y-2">
+          {boostedValue > 0 && (
+            <div className="flex items-center gap-2">
+              <FaGem className="text-fuchsia-400 text-lg" />
+              <div className="w-full h-6 bg-gray-700 rounded overflow-hidden relative">
+                <div 
+                  className="h-full bg-fuchsia-500/50 transition-all duration-300"
+                  style={{ width: `${gemProgress * 100}%` }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-sm">
+                  $250,000
+                </div>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleSell}
+            disabled={totalValue === 0}
+            className="w-full px-4 py-2 rounded bg-green-500/10 border border-green-500/30 
+                      hover:bg-green-500/20 transition-all duration-300 text-gray-300 
+                      hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Sell All {boostedValue > 0 && `($${formatNumber(boostedValue)}${gemsToEarn > 0 ? ` + ${gemsToEarn} 💎` : ''})`}
+          </button>
+        </div>
 
         <button
           onClick={handleUpgrade}

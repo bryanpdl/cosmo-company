@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { formatNumber } from '../utils/formatters';
 import { playUpgradeSound, playBlackholeClickSound, playGemEarnedSound } from '../utils/sounds';
+import { FaGem } from 'react-icons/fa';
 
 export default function BlackHole() {
   const { state, dispatch } = useGame();
@@ -12,6 +13,7 @@ export default function BlackHole() {
   };
   const [isClicking, setIsClicking] = React.useState(false);
   const MAX_AUTO_CLICKER_LEVEL = 6;
+  const CLICKS_THRESHOLD_FOR_GEM = 750; // 1000 clicks = 1 cosmic gem
 
   const [clickCount, setClickCount] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -29,9 +31,7 @@ export default function BlackHole() {
     const newClickCount = clickCount + 1;
     setClickCount(newClickCount);
     
-    // Every 1,920 clicks = 1 cosmic gem (1 minute at max auto-clicker)
-    const clicksThresholdForGem = 1920;
-    const gemsEarned = Math.floor(newClickCount / clicksThresholdForGem) - Math.floor(clickCount / clicksThresholdForGem);
+    const gemsEarned = Math.floor(newClickCount / CLICKS_THRESHOLD_FOR_GEM) - Math.floor(clickCount / CLICKS_THRESHOLD_FOR_GEM);
     
     // Manual clicks should play sound and show animation
     if (blackHole.autoClicker.level < 4) {
@@ -64,9 +64,7 @@ export default function BlackHole() {
         const newClickCount = clickCount + 1;
         setClickCount(newClickCount);
         
-        // Every 1,920 clicks = 1 cosmic gem (1 minute at max auto-clicker)
-        const clicksThresholdForGem = 1920;
-        const gemsEarned = Math.floor(newClickCount / clicksThresholdForGem) - Math.floor(clickCount / clicksThresholdForGem);
+        const gemsEarned = Math.floor(newClickCount / CLICKS_THRESHOLD_FOR_GEM) - Math.floor(clickCount / CLICKS_THRESHOLD_FOR_GEM);
         
         if (gemsEarned > 0) {
           playGemEarnedSound();
@@ -162,9 +160,15 @@ export default function BlackHole() {
           Click Value: ${formatNumber(clickValue)}
         </div>
         {blackHole.autoClicker.level > 0 && (
-          <div className="text-sm text-cyan-400">
-            Auto-Clicks: {formatNumber(clicksPerSecond)}/s
-          </div>
+          <>
+            <div className="text-sm text-cyan-400">
+              Auto-Clicks: {formatNumber(clicksPerSecond)}/s
+            </div>
+            <div className="text-sm text-fuchsia-400 flex items-center gap-1">
+              <FaGem className="text-sm" />
+              {Math.floor((clicksPerSecond * 60) / CLICKS_THRESHOLD_FOR_GEM)}/min
+            </div>
+          </>
         )}
       </div>
 

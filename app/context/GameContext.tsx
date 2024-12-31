@@ -139,9 +139,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const payloadBoostMultiplier = 1 + (Math.floor(state.loadingDock.level / 1) * 0.01);
       const boostedValue = totalValue * payloadBoostMultiplier;
 
+      // Calculate gems earned ($250,000 per gem)
+      const gemsEarned = Math.floor(boostedValue / 250000);
+
       return {
         ...state,
         money: state.money + boostedValue,
+        cosmicGems: (state.cosmicGems || 0) + gemsEarned,
         loadingDock: {
           ...state.loadingDock,
           stored: {},
