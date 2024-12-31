@@ -79,18 +79,36 @@ export default function BlackHole() {
       {/* Clickable Black Hole */}
       <motion.button
         whileHover={{ scale: 1.05 }}
-        animate={{ scale: isClicking ? 0.95 : 1 }}
+        animate={{ scale: blackHole.autoClicker.level < 4 && isClicking ? 0.95 : 1 }}
         onClick={handleClick}
         className="w-[150px] h-[150px] relative mb-4 group"
       >
+        {blackHole.autoClicker.level >= 4 && (
+          <motion.div
+            className="absolute inset-0 rounded-full bg-pink-500/20"
+            animate={{
+              boxShadow: [
+                '0 0 20px 10px rgba(255, 186, 255, 0.2)',
+                '0 0 40px 20px rgba(255, 186, 255, 0.4)',
+                '0 0 20px 10px rgba(255, 186, 255, 0.2)'
+              ],
+              scale: [0.55, 0.55, 0.55]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+        )}
         <motion.img
           src="/images/blackhole.png"
           alt="Black Hole"
-          className="w-full h-full object-contain"
+          className="w-full h-full object-contain relative z-10"
           animate={{ rotate: 360 }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         />
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
           <span className="text-cyan-400 font-bold text-lg">+${formatNumber(clickValue)}</span>
         </div>
       </motion.button>
