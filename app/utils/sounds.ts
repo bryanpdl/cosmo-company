@@ -5,7 +5,7 @@ const SOUND_EFFECTS = {
   sell: '/sounds/sell.wav',
   unlock: '/sounds/unlock.wav',
   fullAlert: '/sounds/full-alert.wav',
-  blackholeClick: '/sounds/blackhole-click.wav',
+  blackholeClick: '/sounds/blackhole-click3.wav',
 } as const;
 
 const MUSIC_TRACKS = {

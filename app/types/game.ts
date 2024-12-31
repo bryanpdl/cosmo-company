@@ -46,6 +46,10 @@ export interface GlobalUpgrades {
 
 export interface BlackHole {
   level: number;
+  autoClicker: {
+    level: number;
+    clicksPerSecond: number;
+  };
 }
 
 export interface GameState {

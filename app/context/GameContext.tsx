@@ -18,14 +18,14 @@ const materials: Material[] = [
   { id: 'darkMatter', name: 'Dark Matter', baseValue: 80, color: 'fuchsia' },
   { id: 'antimatter', name: 'Antimatter', baseValue: 90, color: 'pink' },
   { id: 'quantumDust', name: 'Quantum Dust', baseValue: 100, color: 'green' },
-  { id: 'cosmicShard', name: 'Cosmic Shard', baseValue: 150, color: 'amber' },
-  { id: 'timeEssence', name: 'Time Essence', baseValue: 200, color: 'orange' },
-  { id: 'voidCrystal', name: 'Void Crystal', baseValue: 300, color: 'violet' },
-  { id: 'starEssence', name: 'Star Essence', baseValue: 450, color: 'yellow' },
-  { id: 'realityFragment', name: 'Reality Fragment', baseValue: 600, color: 'rose' },
-  { id: 'eternityMatter', name: 'Eternity Matter', baseValue: 800, color: 'emerald' },
-  { id: 'infinityDust', name: 'Infinity Dust', baseValue: 1000, color: 'teal' },
-  { id: 'omnipotenceOrb', name: 'Omnipotence Orb', baseValue: 1500, color: 'red' },
+  { id: 'cosmicShard', name: 'Cosmic Shard', baseValue: 250, color: 'amber' },
+  { id: 'timeEssence', name: 'Time Essence', baseValue: 500, color: 'orange' },
+  { id: 'voidCrystal', name: 'Void Crystal', baseValue: 800, color: 'violet' },
+  { id: 'starEssence', name: 'Star Essence', baseValue: 1200, color: 'yellow' },
+  { id: 'realityFragment', name: 'Reality Fragment', baseValue: 1800, color: 'rose' },
+  { id: 'eternityMatter', name: 'Eternity Matter', baseValue: 2500, color: 'emerald' },
+  { id: 'infinityDust', name: 'Infinity Dust', baseValue: 3500, color: 'teal' },
+  { id: 'omnipotenceOrb', name: 'Omnipotence Orb', baseValue: 5000, color: 'red' },
 ];
 
 // Initial nodes
@@ -68,6 +68,10 @@ const initialState: GameState = {
   },
   blackHole: {
     level: 1,
+    autoClicker: {
+      level: 0,
+      clicksPerSecond: 0,
+    },
   },
 };
 
@@ -83,7 +87,8 @@ type GameAction =
   | { type: 'SAVE_GAME_STATE' }
   | { type: 'PURCHASE_DOCK_MANAGER' }
   | { type: 'CLICK_BLACK_HOLE' }
-  | { type: 'UPGRADE_BLACK_HOLE' };
+  | { type: 'UPGRADE_BLACK_HOLE' }
+  | { type: 'UPGRADE_BLACK_HOLE_AUTO_CLICKER' };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -278,6 +283,27 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         blackHole: {
           ...state.blackHole,
           level: state.blackHole.level + 1,
+        },
+        _shouldSave: true,
+      };
+    }
+
+    case 'UPGRADE_BLACK_HOLE_AUTO_CLICKER': {
+      const upgradeCost = state.blackHole.autoClicker.level === 0 
+        ? 5_000_000 
+        : Math.floor(5_000_000 * Math.pow(2, state.blackHole.autoClicker.level));
+        
+      if (state.money < upgradeCost) return state;
+
+      return {
+        ...state,
+        money: state.money - upgradeCost,
+        blackHole: {
+          ...state.blackHole,
+          autoClicker: {
+            level: state.blackHole.autoClicker.level + 1,
+            clicksPerSecond: Math.pow(2, state.blackHole.autoClicker.level)
+          },
         },
         _shouldSave: true,
       };

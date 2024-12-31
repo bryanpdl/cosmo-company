@@ -28,7 +28,7 @@ export function Node({ node }: NodeProps) {
     let lastTime = performance.now();
     const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
     const baseSpeed = 7 / Math.pow(1.5, nodeIndex); // Each node is 1.5x slower than the previous
-    const productionPerMs = (node.productionRate * node.level.production * baseSpeed) / 1000;
+    const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier) / 1000;
 
     const animate = (currentTime: number) => {
       const deltaTime = currentTime - lastTime;
@@ -121,7 +121,7 @@ export function Node({ node }: NodeProps) {
               {(() => {
                 const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
                 const baseSpeed = 7 / Math.pow(1.5, nodeIndex);
-                const productionPerMs = (node.productionRate * node.level.production * baseSpeed) / 1000;
+                const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier) / 1000;
                 const materialsPerSecond = (productionPerMs * 1000) / 100; // Convert to materials per second
                 return materialsPerSecond.toFixed(1);
               })()} MPS
@@ -135,7 +135,7 @@ export function Node({ node }: NodeProps) {
               {(() => {
                 const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
                 const baseSpeed = 7 / Math.pow(1.5, nodeIndex);
-                const productionPerMs = (node.productionRate * node.level.production * baseSpeed) / 1000;
+                const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier) / 1000;
                 const materialsPerSecond = (productionPerMs * 1000) / 100;
                 const isHighSpeed = materialsPerSecond >= 2.0;
                 return (
@@ -147,7 +147,7 @@ export function Node({ node }: NodeProps) {
               {(() => {
                 const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
                 const baseSpeed = 7 / Math.pow(1.5, nodeIndex);
-                const productionPerMs = (node.productionRate * node.level.production * baseSpeed) / 1000;
+                const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier) / 1000;
                 const materialsPerSecond = (productionPerMs * 1000) / 100;
                 const isHighSpeed = materialsPerSecond >= 2.0;
 

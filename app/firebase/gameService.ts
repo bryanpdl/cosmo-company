@@ -111,11 +111,17 @@ export async function loadGameState(userId: string): Promise<GameState | null> {
           level: data.loadingDock.level,
           hasManager: data.loadingDock.hasManager ?? false,
         },
-        blackHole: data.blackHole ?? { level: 1 },
+        blackHole: {
+          level: data.blackHole?.level ?? 1,
+          autoClicker: data.blackHole?.autoClicker ?? {
+            level: 0,
+            clicksPerSecond: 0
+          }
+        },
       };
 
-      // If nodes were updated, save the changes
-      if (JSON.stringify(data.nodes) !== JSON.stringify(mergedNodes)) {
+      // If state was updated, save the changes
+      if (JSON.stringify(data) !== JSON.stringify(migratedState)) {
         await saveGameState(userId, migratedState);
       }
 
