@@ -11,6 +11,7 @@ export default function BlackHole() {
     autoClicker: state.blackHole?.autoClicker ?? { level: 0, clicksPerSecond: 0 }
   };
   const [isClicking, setIsClicking] = React.useState(false);
+  const MAX_AUTO_CLICKER_LEVEL = 6;
 
   const triggerClick = (playSound: boolean = false) => {
     if (playSound) {
@@ -31,6 +32,7 @@ export default function BlackHole() {
   };
 
   const handleAutoClickerUpgrade = () => {
+    if (blackHole.autoClicker.level >= MAX_AUTO_CLICKER_LEVEL) return;
     playUpgradeSound();
     dispatch({ type: 'UPGRADE_BLACK_HOLE_AUTO_CLICKER' });
   };
@@ -39,7 +41,7 @@ export default function BlackHole() {
   useEffect(() => {
     if (!blackHole.autoClicker?.level) return;
 
-    const clicksPerSecond = Math.pow(2, blackHole.autoClicker.level - 1);
+    const clicksPerSecond = Math.min(Math.pow(2, blackHole.autoClicker.level - 1), 32);
     const interval = 1000 / clicksPerSecond;
     let lastClick = performance.now();
     let animationFrameId: number;
@@ -69,7 +71,9 @@ export default function BlackHole() {
     : Math.floor(5_000_000 * Math.pow(2, blackHole.autoClicker.level));
   const clicksPerSecond = blackHole.autoClicker.level === 0 
     ? 0 
-    : Math.pow(2, blackHole.autoClicker.level - 1);
+    : Math.min(Math.pow(2, blackHole.autoClicker.level - 1), 32);
+
+  const isAutoClickerMaxed = blackHole.autoClicker.level >= MAX_AUTO_CLICKER_LEVEL;
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg p-4 flex flex-col items-center">
@@ -139,19 +143,25 @@ export default function BlackHole() {
 
         <button
           onClick={handleAutoClickerUpgrade}
-          disabled={state.money < autoClickerUpgradeCost}
-          className="w-full px-4 py-2 rounded bg-cyan-500/10 border border-cyan-500/30 
-                    hover:bg-cyan-500/20 transition-all duration-300 text-gray-300 
-                    hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={state.money < autoClickerUpgradeCost || isAutoClickerMaxed}
+          className={`w-full px-4 py-2 rounded ${
+            isAutoClickerMaxed 
+              ? 'bg-gray-500/10 border border-gray-500/30 cursor-not-allowed' 
+              : 'bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20'
+          } transition-all duration-300 text-gray-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {blackHole.autoClicker.level === 0 ? (
             <>Unlock Auto-Clicker</>
+          ) : isAutoClickerMaxed ? (
+            <div className="text-gray-400">MAXED</div>
           ) : (
             <>Upgrade Auto-Clicker</>
           )}
-          <div>
-            (${formatNumber(autoClickerUpgradeCost)})
-          </div>
+          {!isAutoClickerMaxed && (
+            <div>
+              (${formatNumber(autoClickerUpgradeCost)})
+            </div>
+          )}
         </button>
       </div>
     </div>
