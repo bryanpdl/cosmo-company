@@ -54,6 +54,7 @@ export interface BlackHole {
 
 export interface GameState {
   money: number;
+  cosmicGems: number;
   nodes: Node[];
   loadingDock: LoadingDock;
   globalUpgrades: GlobalUpgrades;

@@ -9,7 +9,7 @@ import { GlobalUpgrades } from './components/GlobalUpgrades';
 import { Modal } from './components/Modal';
 import { useGame } from './context/GameContext';
 import { formatNumber } from './utils/formatters';
-import { FaFlask, FaUserAstronaut, FaVolumeMute, FaVolumeUp, FaSignOutAlt } from 'react-icons/fa';
+import { FaFlask, FaUserAstronaut, FaVolumeMute, FaVolumeUp, FaSignOutAlt, FaGem } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
 import { ParticleBackground } from './components/ParticleBackground';
 import { useSettings } from './context/SettingsContext';
@@ -20,7 +20,7 @@ function GameContent() {
   const { state, isLoading } = useGame();
   const { user, signInWithGoogle, signOutUser } = useAuth();
   const { settings, toggleSound, toggleMusic } = useSettings();
-  const { nodes, money } = state;
+  const { nodes, money, cosmicGems } = state;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isResearchOpen, setIsResearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -86,14 +86,25 @@ function GameContent() {
             >
               Cosmo Co.
             </motion.h1>
-            <motion.div
-              className="text-2xl font-bold mt-2 text-left"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              ${formatNumber(money)}
-            </motion.div>
+            <div className="flex items-center gap-4 mt-2">
+              <motion.div
+                className="text-2xl font-bold text-left flex items-center gap-1"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                ${formatNumber(money)}
+              </motion.div>
+              <motion.div
+                className="text-2xl font-bold text-left flex items-center gap-1"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <FaGem className="text-fuchsia-400" />
+                {formatNumber(cosmicGems)}
+              </motion.div>
+            </div>
           </div>
 
           {/* Header Actions */}

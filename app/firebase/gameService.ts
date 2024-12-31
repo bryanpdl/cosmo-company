@@ -155,6 +155,7 @@ export async function initializeUser(userId: string, displayName: string, email:
       // Initialize game state with default values
       const initialGameState: SavedGameState = {
         money: 0,
+        cosmicGems: 0,
         nodes: initialNodes,
         loadingDock: {
           capacity: 25,
@@ -181,7 +182,7 @@ export async function initializeUser(userId: string, displayName: string, email:
           autoClicker: {
             level: 0,
             clicksPerSecond: 0,
-          },
+          }
         },
         lastUpdated: serverTimestamp(),
         version: CURRENT_VERSION,

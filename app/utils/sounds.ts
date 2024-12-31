@@ -173,4 +173,11 @@ export function playFullAlertSound(): void {
 
 export function playBlackholeClickSound() {
   playSound('blackholeClick');
+}
+
+export function playGemEarnedSound() {
+  if (typeof window === 'undefined') return;
+  const sound = new Audio('/sounds/gem-earned.wav');
+  sound.volume = 0.3;
+  sound.play().catch(() => {});
 } 

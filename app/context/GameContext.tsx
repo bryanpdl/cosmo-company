@@ -45,6 +45,7 @@ export const initialNodes: Node[] = materials.map((material, index) => ({
 
 const initialState: GameState = {
   money: 0,
+  cosmicGems: 0,
   nodes: initialNodes,
   loadingDock: {
     capacity: 25,
@@ -86,7 +87,7 @@ type GameAction =
   | { type: 'LOAD_GAME_STATE'; payload: GameState }
   | { type: 'SAVE_GAME_STATE' }
   | { type: 'PURCHASE_DOCK_MANAGER' }
-  | { type: 'CLICK_BLACK_HOLE' }
+  | { type: 'CLICK_BLACK_HOLE'; payload: { gemsEarned: number } }
   | { type: 'UPGRADE_BLACK_HOLE' }
   | { type: 'UPGRADE_BLACK_HOLE_AUTO_CLICKER' };
 
@@ -267,9 +268,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'CLICK_BLACK_HOLE': {
       const clickValue = Math.floor(10 * Math.pow(1.5, state.blackHole.level - 1));
+      
       return {
         ...state,
         money: state.money + clickValue,
+        cosmicGems: (state.cosmicGems || 0) + action.payload.gemsEarned,
+        _shouldSave: state._shouldSave || action.payload.gemsEarned > 0
       };
     }
 

@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { formatNumber } from '../utils/formatters';
-import { playUpgradeSound, playBlackholeClickSound } from '../utils/sounds';
+import { playUpgradeSound, playBlackholeClickSound, playGemEarnedSound } from '../utils/sounds';
 
 export default function BlackHole() {
   const { state, dispatch } = useGame();
@@ -13,31 +13,44 @@ export default function BlackHole() {
   const [isClicking, setIsClicking] = React.useState(false);
   const MAX_AUTO_CLICKER_LEVEL = 6;
 
-  const triggerClick = (playSound: boolean = false) => {
-    if (playSound) {
-      playBlackholeClickSound();
+  const [clickCount, setClickCount] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return parseInt(localStorage.getItem('blackHoleClickCount') || '0');
     }
-    dispatch({ type: 'CLICK_BLACK_HOLE' });
-    setIsClicking(true);
-    setTimeout(() => setIsClicking(false), 150);
-  };
+    return 0;
+  });
+
+  // Save click count to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('blackHoleClickCount', clickCount.toString());
+  }, [clickCount]);
 
   const handleClick = () => {
-    triggerClick(true); // Manual clicks play sound
+    const newClickCount = clickCount + 1;
+    setClickCount(newClickCount);
+    
+    // Every 1,920 clicks = 1 cosmic gem (1 minute at max auto-clicker)
+    const clicksThresholdForGem = 1920;
+    const gemsEarned = Math.floor(newClickCount / clicksThresholdForGem) - Math.floor(clickCount / clicksThresholdForGem);
+    
+    // Manual clicks should play sound and show animation
+    if (blackHole.autoClicker.level < 4) {
+      playBlackholeClickSound();
+      setIsClicking(true);
+      setTimeout(() => setIsClicking(false), 150);
+    }
+    
+    if (gemsEarned > 0) {
+      playGemEarnedSound();
+    }
+    
+    dispatch({ 
+      type: 'CLICK_BLACK_HOLE',
+      payload: { gemsEarned }
+    });
   };
 
-  const handleUpgrade = () => {
-    playUpgradeSound();
-    dispatch({ type: 'UPGRADE_BLACK_HOLE' });
-  };
-
-  const handleAutoClickerUpgrade = () => {
-    if (blackHole.autoClicker.level >= MAX_AUTO_CLICKER_LEVEL) return;
-    playUpgradeSound();
-    dispatch({ type: 'UPGRADE_BLACK_HOLE_AUTO_CLICKER' });
-  };
-
-  // Auto-clicker effect with RAF for better timing
+  // Handle auto-clicks with RAF for better timing
   useEffect(() => {
     if (!blackHole.autoClicker?.level) return;
 
@@ -48,7 +61,22 @@ export default function BlackHole() {
 
     const autoClick = (currentTime: number) => {
       if (currentTime - lastClick >= interval) {
-        triggerClick(false); // Auto-clicks don't play sound
+        const newClickCount = clickCount + 1;
+        setClickCount(newClickCount);
+        
+        // Every 1,920 clicks = 1 cosmic gem (1 minute at max auto-clicker)
+        const clicksThresholdForGem = 1920;
+        const gemsEarned = Math.floor(newClickCount / clicksThresholdForGem) - Math.floor(clickCount / clicksThresholdForGem);
+        
+        if (gemsEarned > 0) {
+          playGemEarnedSound();
+        }
+        
+        dispatch({ 
+          type: 'CLICK_BLACK_HOLE',
+          payload: { gemsEarned }
+        });
+        
         lastClick = currentTime;
       }
       animationFrameId = requestAnimationFrame(autoClick);
@@ -61,7 +89,18 @@ export default function BlackHole() {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [blackHole.autoClicker?.level]);
+  }, [blackHole.autoClicker?.level, clickCount]);
+
+  const handleUpgrade = () => {
+    playUpgradeSound();
+    dispatch({ type: 'UPGRADE_BLACK_HOLE' });
+  };
+
+  const handleAutoClickerUpgrade = () => {
+    if (blackHole.autoClicker.level >= MAX_AUTO_CLICKER_LEVEL) return;
+    playUpgradeSound();
+    dispatch({ type: 'UPGRADE_BLACK_HOLE_AUTO_CLICKER' });
+  };
 
   // Calculate upgrade costs and values
   const upgradeCost = Math.floor(1000 * Math.pow(2, blackHole.level - 1));
