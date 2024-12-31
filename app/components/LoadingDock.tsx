@@ -99,16 +99,18 @@ export default function LoadingDock() {
 
       {/* Materials List */}
       <div className="space-y-2 mb-4">
-        {Object.entries(loadingDock.stored).map(([materialId, amount]) => {
-          const material = nodes.find(n => n.material.id === materialId)?.material;
-          if (!material || amount === 0) return null;
-          return (
-            <div key={materialId} className="flex justify-between items-center">
-              <span className="text-gray-200 font-medium">{material.name}</span>
-              <span className="text-gray-400">{amount}</span>
-            </div>
-          );
-        })}
+        {Object.entries(loadingDock.stored)
+          .sort(([, amountA], [, amountB]) => amountB - amountA)
+          .map(([materialId, amount]) => {
+            const material = nodes.find(n => n.material.id === materialId)?.material;
+            if (!material || amount === 0) return null;
+            return (
+              <div key={materialId} className="flex justify-between items-center">
+                <span className="text-gray-200 font-medium">{material.name}</span>
+                <span className="text-gray-400">{amount}</span>
+              </div>
+            );
+          })}
       </div>
 
       {/* Actions */}
