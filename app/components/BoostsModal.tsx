@@ -36,7 +36,7 @@ const boostConfigs: (BoostConfig & { cost: number })[] = [
     description: 'Quintuple black hole click value for 15 seconds',
     icon: <FaClock className="text-purple-400" />,
     color: 'fuchsia',
-    cost: 150,
+    cost: 75,
   },
 ];
 
