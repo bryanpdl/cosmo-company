@@ -9,12 +9,13 @@ import { GlobalUpgrades } from './components/GlobalUpgrades';
 import { Modal } from './components/Modal';
 import { useGame } from './context/GameContext';
 import { formatNumber } from './utils/formatters';
-import { FaFlask, FaUserAstronaut, FaVolumeMute, FaVolumeUp, FaSignOutAlt, FaGem } from 'react-icons/fa';
+import { FaFlask, FaUserAstronaut, FaVolumeMute, FaVolumeUp, FaSignOutAlt, FaGem, FaBolt } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
 import { ParticleBackground } from './components/ParticleBackground';
 import { useSettings } from './context/SettingsContext';
 import { playButtonSound } from './utils/sounds';
 import BlackHole from './components/BlackHole';
+import BoostsModal from './components/BoostsModal';
 
 function GameContent() {
   const { state, isLoading } = useGame();
@@ -24,6 +25,7 @@ function GameContent() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isResearchOpen, setIsResearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isBoostsOpen, setIsBoostsOpen] = useState(false);
 
   // Handle scroll effect
   useEffect(() => {
@@ -108,79 +110,93 @@ function GameContent() {
           </div>
 
           {/* Header Actions */}
-          <div className="flex items-center gap-4 pt-4">
-            {/* Research Button */}
+          <div className="flex items-start gap-2 pt-2 ml-auto mr-4">
+            <button
+              onClick={() => {
+                playButtonSound();
+                setIsBoostsOpen(true);
+              }}
+              className="group h-10 overflow-hidden flex items-center gap-2 px-3 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/30 
+              hover:bg-fuchsia-500/20 transition-all duration-300 hover:w-[105px] w-[44px]"
+            >
+              <FaGem className="text-fuchsia-400 shrink-0" />
+              <span className="text-fuchsia-400 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pr-1">
+                Boosts
+              </span>
+            </button>
+
             <button
               onClick={() => {
                 playButtonSound();
                 setIsResearchOpen(true);
               }}
-              className="px-4 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
-                       hover:bg-cyan-500/20 transition-all duration-300 text-gray-300 
-                       hover:text-white flex items-center gap-2"
+              className="group h-10 overflow-hidden flex items-center gap-2 px-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 
+              hover:bg-cyan-500/20 transition-all duration-300 hover:w-[115px] w-[44px]"
             >
-              <FaFlask className="text-lg" />
-              Research
+              <FaFlask className="text-cyan-400 shrink-0" />
+              <span className="text-cyan-400 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pr-1">
+                Research
+              </span>
             </button>
+          </div>
 
-            {/* Avatar & Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  playButtonSound();
-                  setIsDropdownOpen(!isDropdownOpen);
-                }}
-                className="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-700 hover:border-cyan-500/50 
-                         transition-colors duration-300 flex items-center justify-center"
-              >
-                {user ? (
-                  <img
-                    src={user.photoURL || undefined}
-                    alt={user.displayName || 'User'}
-                    className="w-full h-full rounded-full"
-                  />
-                ) : (
-                  <FaUserAstronaut className="text-2xl" />
-                )}
-              </button>
-              
-              {isDropdownOpen && (
-                <div className="absolute z-50 right-0 mt-2 w-48 rounded-lg shadow-lg bg-gray-800/90 backdrop-blur-sm border border-gray-700">
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        playButtonSound();
-                        toggleSound();
-                      }}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors duration-200"
-                    >
-                      {settings.soundEnabled ? <FaVolumeUp className="text-cyan-400" /> : <FaVolumeMute className="text-gray-400" />}
-                      {settings.soundEnabled ? 'Effects On' : 'Effects Off'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        playButtonSound();
-                        toggleMusic();
-                      }}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors duration-200"
-                    >
-                      {settings.musicEnabled ? <FaVolumeUp className="text-purple-400" /> : <FaVolumeMute className="text-gray-400" />}
-                      {settings.musicEnabled ? 'Music On' : 'Music Off'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        playButtonSound();
-                        signOutUser();
-                      }}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors duration-200"
-                    >
-                      <FaSignOutAlt className="text-red-400" />
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
+          {/* Avatar & Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                playButtonSound();
+                setIsDropdownOpen(!isDropdownOpen);
+              }}
+              className="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-700 hover:border-cyan-500/50 
+                       transition-colors duration-300 flex items-center justify-center"
+            >
+              {user ? (
+                <img
+                  src={user.photoURL || undefined}
+                  alt={user.displayName || 'User'}
+                  className="w-full h-full rounded-full"
+                />
+              ) : (
+                <FaUserAstronaut className="text-2xl" />
               )}
-            </div>
+            </button>
+            
+            {isDropdownOpen && (
+              <div className="absolute z-50 right-0 mt-2 w-48 rounded-lg shadow-lg bg-gray-800/90 backdrop-blur-sm border border-gray-700">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      playButtonSound();
+                      toggleSound();
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors duration-200"
+                  >
+                    {settings.soundEnabled ? <FaVolumeUp className="text-cyan-400" /> : <FaVolumeMute className="text-gray-400" />}
+                    {settings.soundEnabled ? 'Effects On' : 'Effects Off'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      playButtonSound();
+                      toggleMusic();
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors duration-200"
+                  >
+                    {settings.musicEnabled ? <FaVolumeUp className="text-purple-400" /> : <FaVolumeMute className="text-gray-400" />}
+                    {settings.musicEnabled ? 'Music On' : 'Music Off'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      playButtonSound();
+                      signOutUser();
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700/50 transition-colors duration-200"
+                  >
+                    <FaSignOutAlt className="text-red-400" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -213,6 +229,11 @@ function GameContent() {
       >
         <GlobalUpgrades />
       </Modal>
+
+      <BoostsModal
+        isOpen={isBoostsOpen}
+        onClose={() => setIsBoostsOpen(false)}
+      />
     </div>
   );
 }

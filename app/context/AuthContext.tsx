@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         // Initialize user data in Firestore when they first sign in
         try {
-          await initializeUser(user.uid, user.displayName || 'Anonymous', user.email || '');
+          await initializeUser(user.uid);
         } catch (error) {
           console.error('Error initializing user:', error);
         }

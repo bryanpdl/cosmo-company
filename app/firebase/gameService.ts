@@ -118,6 +118,8 @@ export async function loadGameState(userId: string): Promise<GameState | null> {
             clicksPerSecond: 0
           }
         },
+        activeBoosts: data.activeBoosts ?? {},
+        cosmicGems: data.cosmicGems ?? 0,
       };
 
       // If state was updated, save the changes
@@ -134,65 +136,36 @@ export async function loadGameState(userId: string): Promise<GameState | null> {
   }
 }
 
-export async function initializeUser(userId: string, displayName: string, email: string): Promise<void> {
-  const userDoc = doc(db, 'users', userId);
-  const gameStateDoc = doc(db, 'users', userId, 'gameState', 'current');
-  
-  try {
-    // Check if user document already exists
-    const docSnap = await getDoc(userDoc);
-    if (!docSnap.exists()) {
-      // Initialize user document
-      await setDoc(userDoc, {
-        uid: userId,
-        displayName,
-        email,
-        lastSaved: serverTimestamp(),
-        totalPlayTime: 0,
-        joinedAt: serverTimestamp(),
-      });
+export async function initializeUser(userId: string): Promise<void> {
+  const userRef = doc(db, 'users', userId);
+  const userDoc = await getDoc(userRef);
 
-      // Initialize game state with default values
-      const initialGameState: SavedGameState = {
-        money: 0,
-        cosmicGems: 0,
-        nodes: initialNodes,
-        loadingDock: {
-          capacity: 25,
-          stored: {},
+  if (!userDoc.exists()) {
+    const initialState: GameState = {
+      money: 0,
+      cosmicGems: 0,
+      nodes: initialNodes,
+      loadingDock: {
+        capacity: 100,
+        stored: {},
+        level: 1,
+        hasManager: false,
+      },
+      globalUpgrades: {
+        materialValue: { level: 1, multiplier: 1 },
+        nodeEfficiency: { level: 1, multiplier: 1 },
+        storageOptimization: { level: 1, multiplier: 1 },
+      },
+      blackHole: {
+        level: 1,
+        autoClicker: {
           level: 1,
-          hasManager: false,
+          clicksPerSecond: 0,
         },
-        globalUpgrades: {
-          materialValue: {
-            level: 1,
-            multiplier: 1,
-          },
-          nodeEfficiency: {
-            level: 1,
-            multiplier: 1,
-          },
-          storageOptimization: {
-            level: 1,
-            multiplier: 1,
-          },
-        },
-        blackHole: {
-          level: 1,
-          autoClicker: {
-            level: 0,
-            clicksPerSecond: 0,
-          }
-        },
-        lastUpdated: serverTimestamp(),
-        version: CURRENT_VERSION,
-        clientTimestamp: Date.now(),
-      };
+      },
+      activeBoosts: {},
+    };
 
-      await setDoc(gameStateDoc, initialGameState);
-    }
-  } catch (error) {
-    console.error('Error initializing user:', error);
-    throw error;
+    await setDoc(userRef, initialState);
   }
 } 

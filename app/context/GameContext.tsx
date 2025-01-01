@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
-import { GameState, Material, Node, UpgradeType, GlobalUpgradeType } from '../types/game';
+import { GameState, Material, Node, UpgradeType, GlobalUpgradeType, BoostType, Boost } from '../types/game';
 import { useAuth } from './AuthContext';
 import { useSettings } from './SettingsContext';
 import { loadGameState, saveGameState } from '../firebase/gameService';
@@ -48,7 +48,7 @@ const initialState: GameState = {
   cosmicGems: 0,
   nodes: initialNodes,
   loadingDock: {
-    capacity: 25,
+    capacity: 100,
     stored: {},
     level: 1,
     hasManager: false,
@@ -70,10 +70,11 @@ const initialState: GameState = {
   blackHole: {
     level: 1,
     autoClicker: {
-      level: 0,
+      level: 1,
       clicksPerSecond: 0,
     },
   },
+  activeBoosts: {},
 };
 
 // Add to GameAction type at the top
@@ -89,7 +90,8 @@ type GameAction =
   | { type: 'PURCHASE_DOCK_MANAGER' }
   | { type: 'CLICK_BLACK_HOLE'; payload: { gemsEarned: number } }
   | { type: 'UPGRADE_BLACK_HOLE' }
-  | { type: 'UPGRADE_BLACK_HOLE_AUTO_CLICKER' };
+  | { type: 'UPGRADE_BLACK_HOLE_AUTO_CLICKER' }
+  | { type: 'ACTIVATE_BOOST'; payload: { boostType: BoostType; cost: number } };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -97,6 +99,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const { nodeId, amount } = action.payload;
       const node = state.nodes.find(n => n.id === nodeId);
       if (!node || !node.isUnlocked) return state;
+
+      const productionSpeedBoost = state.activeBoosts.productionSpeed?.endsAt && state.activeBoosts.productionSpeed.endsAt > Date.now()
+        ? state.activeBoosts.productionSpeed.multiplier
+        : 1;
 
       // Get current amount of this material
       const currentAmount = state.loadingDock.stored[node.material.id] || 0;
@@ -106,7 +112,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       
       // Calculate how much we can actually store
       const spaceAvailable = state.loadingDock.capacity - totalStorage;
-      const amountToStore = Math.min(amount, spaceAvailable);
+      const amountToStore = Math.min(amount * productionSpeedBoost, spaceAvailable);
       
       // If no space available, return current state
       if (spaceAvailable <= 0) return state;
@@ -125,18 +131,33 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'SELL_MATERIALS': {
       let totalValue = 0;
+      const now = Date.now();
+      
+      // Check if material value boost is active
+      const materialBoost = state.activeBoosts.materialValue;
+      const materialValueMultiplier = materialBoost?.endsAt && materialBoost.endsAt > now 
+        ? materialBoost.multiplier 
+        : 1;
+
+      console.log('Selling with boost:', {
+        materialValueMultiplier,
+        boostActive: materialBoost?.endsAt && materialBoost.endsAt > now,
+        boostEndsAt: materialBoost?.endsAt,
+        now,
+      });
+      
       Object.entries(state.loadingDock.stored).forEach(([materialId, amount]) => {
         const material = materials.find(m => m.id === materialId);
         const node = state.nodes.find(n => n.material.id === materialId);
         if (material && node) {
           const nodeValueMultiplier = 1 + (node.level.value - 1) * 0.15;
           const baseValue = material.baseValue * amount;
-          totalValue += baseValue * nodeValueMultiplier * state.globalUpgrades.materialValue.multiplier;
+          totalValue += baseValue * nodeValueMultiplier * state.globalUpgrades.materialValue.multiplier * materialValueMultiplier;
         }
       });
 
       // Apply payload boost
-      const payloadBoostMultiplier = 1 + (Math.floor(state.loadingDock.level / 1) * 0.01);
+      const payloadBoostMultiplier = 1 + ((state.loadingDock.level - 1) * 0.01);
       const boostedValue = totalValue * payloadBoostMultiplier;
 
       // Calculate gems earned ($250,000 per gem)
@@ -272,10 +293,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'CLICK_BLACK_HOLE': {
       const clickValue = Math.floor(10 * Math.pow(1.5, state.blackHole.level - 1));
+      const clickPowerBoost = state.activeBoosts.clickPower?.endsAt && state.activeBoosts.clickPower.endsAt > Date.now() 
+        ? state.activeBoosts.clickPower.multiplier 
+        : 1;
       
       return {
         ...state,
-        money: state.money + clickValue,
+        money: state.money + (clickValue * clickPowerBoost),
         cosmicGems: (state.cosmicGems || 0) + action.payload.gemsEarned,
         _shouldSave: state._shouldSave || action.payload.gemsEarned > 0
       };
@@ -312,6 +336,37 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             level: state.blackHole.autoClicker.level + 1,
             clicksPerSecond: Math.pow(2, state.blackHole.autoClicker.level)
           },
+        },
+        _shouldSave: true,
+      };
+    }
+
+    case 'ACTIVATE_BOOST': {
+      const boostConfigs: { [key in BoostType]: { multiplier: number, duration: number } } = {
+        materialValue: { multiplier: 2, duration: 30 },
+        productionSpeed: { multiplier: 3, duration: 20 },
+        clickPower: { multiplier: 5, duration: 15 },
+      };
+
+      const config = boostConfigs[action.payload.boostType];
+      if (state.cosmicGems < action.payload.cost) {
+        return state;
+      }
+
+      const newBoost: Boost = {
+        type: action.payload.boostType,
+        multiplier: config.multiplier,
+        duration: config.duration,
+        endsAt: Date.now() + (config.duration * 1000),
+        cost: action.payload.cost,
+      };
+
+      return {
+        ...state,
+        cosmicGems: state.cosmicGems - action.payload.cost,
+        activeBoosts: {
+          ...state.activeBoosts,
+          [action.payload.boostType]: newBoost,
         },
         _shouldSave: true,
       };
@@ -449,6 +504,41 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [user, isLoading, state]);
+
+  // Add this effect after the other useEffects in GameProvider
+  useEffect(() => {
+    const checkBoosts = () => {
+      const now = Date.now();
+      let hasExpired = false;
+
+      // Check each active boost
+      Object.entries(state.activeBoosts).forEach(([type, boost]) => {
+        if (boost.endsAt && boost.endsAt < now) {
+          hasExpired = true;
+        }
+      });
+
+      // If any boosts expired, clean them up
+      if (hasExpired) {
+        dispatch({
+          type: 'LOAD_GAME_STATE',
+          payload: {
+            ...state,
+            activeBoosts: Object.fromEntries(
+              Object.entries(state.activeBoosts).filter(([_, boost]) => 
+                boost.endsAt && boost.endsAt > now
+              )
+            ),
+            _shouldSave: true,
+          },
+        });
+      }
+    };
+
+    // Check every second
+    const interval = setInterval(checkBoosts, 1000);
+    return () => clearInterval(interval);
+  }, [state.activeBoosts]);
 
   return (
     <GameContext.Provider value={{ state, dispatch: wrappedDispatch, isLoading }}>

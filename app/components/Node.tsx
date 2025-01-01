@@ -28,7 +28,10 @@ export function Node({ node }: NodeProps) {
     let lastTime = performance.now();
     const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
     const baseSpeed = 7 / Math.pow(1.5, nodeIndex); // Each node is 1.5x slower than the previous
-    const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier) / 1000;
+    const productionSpeedBoost = state.activeBoosts.productionSpeed?.endsAt && state.activeBoosts.productionSpeed.endsAt > Date.now()
+      ? state.activeBoosts.productionSpeed.multiplier
+      : 1;
+    const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier * productionSpeedBoost) / 1000;
 
     const animate = (currentTime: number) => {
       const deltaTime = currentTime - lastTime;
@@ -55,7 +58,7 @@ export function Node({ node }: NodeProps) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [node, dispatch]);
+  }, [node, dispatch, state.activeBoosts.productionSpeed]);
 
   const handleUnlock = () => {
     if (state.money >= node.unlockCost) {
@@ -73,6 +76,20 @@ export function Node({ node }: NodeProps) {
       });
     }
   };
+
+  // Calculate the current value with all multipliers
+  const getCurrentValue = () => {
+    const nodeValueMultiplier = 1 + (node.level.value - 1) * 0.15;
+    const globalMultiplier = state.globalUpgrades.materialValue.multiplier;
+    const boostMultiplier = state.activeBoosts.materialValue?.endsAt && state.activeBoosts.materialValue.endsAt > Date.now()
+      ? state.activeBoosts.materialValue.multiplier
+      : 1;
+
+    return node.material.baseValue * nodeValueMultiplier * globalMultiplier * boostMultiplier;
+  };
+
+  // Display the current value
+  const displayValue = formatNumber(getCurrentValue());
 
   return (
     <motion.div
@@ -104,7 +121,7 @@ export function Node({ node }: NodeProps) {
           <div className="flex justify-between items-center mb-1">
             <h3 className="text-xl font-bold">{node.name}</h3>
             <div className="text-sm text-green-400">
-              ${formatNumber(node.material.baseValue * (1 + (node.level.value - 1) * 0.15) * state.globalUpgrades.materialValue.multiplier)}
+              ${displayValue}
             </div>
           </div>
           <div className="flex gap-4 text-sm text-gray-400 mb-4">
@@ -121,7 +138,10 @@ export function Node({ node }: NodeProps) {
               {(() => {
                 const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
                 const baseSpeed = 7 / Math.pow(1.5, nodeIndex);
-                const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier) / 1000;
+                const productionSpeedBoost = state.activeBoosts.productionSpeed?.endsAt && state.activeBoosts.productionSpeed.endsAt > Date.now()
+                  ? state.activeBoosts.productionSpeed.multiplier
+                  : 1;
+                const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier * productionSpeedBoost) / 1000;
                 const materialsPerSecond = (productionPerMs * 1000) / 100; // Convert to materials per second
                 return materialsPerSecond.toFixed(1);
               })()} MPS
@@ -135,7 +155,10 @@ export function Node({ node }: NodeProps) {
               {(() => {
                 const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
                 const baseSpeed = 7 / Math.pow(1.5, nodeIndex);
-                const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier) / 1000;
+                const productionSpeedBoost = state.activeBoosts.productionSpeed?.endsAt && state.activeBoosts.productionSpeed.endsAt > Date.now()
+                  ? state.activeBoosts.productionSpeed.multiplier
+                  : 1;
+                const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier * productionSpeedBoost) / 1000;
                 const materialsPerSecond = (productionPerMs * 1000) / 100;
                 const isHighSpeed = materialsPerSecond >= 2.0;
                 return (
@@ -147,7 +170,10 @@ export function Node({ node }: NodeProps) {
               {(() => {
                 const nodeIndex = state.nodes.findIndex(n => n.id === node.id);
                 const baseSpeed = 7 / Math.pow(1.5, nodeIndex);
-                const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier) / 1000;
+                const productionSpeedBoost = state.activeBoosts.productionSpeed?.endsAt && state.activeBoosts.productionSpeed.endsAt > Date.now()
+                  ? state.activeBoosts.productionSpeed.multiplier
+                  : 1;
+                const productionPerMs = (node.productionRate * node.level.production * baseSpeed * state.globalUpgrades.nodeEfficiency.multiplier * productionSpeedBoost) / 1000;
                 const materialsPerSecond = (productionPerMs * 1000) / 100;
                 const isHighSpeed = materialsPerSecond >= 2.0;
 

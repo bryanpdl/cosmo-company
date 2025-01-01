@@ -102,15 +102,28 @@ export default function BlackHole() {
 
   // Calculate upgrade costs and values
   const upgradeCost = Math.floor(1000 * Math.pow(2, blackHole.level - 1));
-  const clickValue = Math.floor(10 * Math.pow(1.5, blackHole.level - 1));
   const autoClickerUpgradeCost = blackHole.autoClicker.level === 0 
     ? 5_000_000 
     : Math.floor(5_000_000 * Math.pow(2, blackHole.autoClicker.level));
+
+  const isAutoClickerMaxed = blackHole.autoClicker.level >= MAX_AUTO_CLICKER_LEVEL;
+
+  // Calculate click value with boosts
+  const getClickValue = () => {
+    const baseValue = Math.floor(10 * Math.pow(1.5, state.blackHole.level - 1));
+    const clickBoost = state.activeBoosts.clickPower?.endsAt && state.activeBoosts.clickPower.endsAt > Date.now()
+      ? state.activeBoosts.clickPower.multiplier
+      : 1;
+    return Math.floor(baseValue * clickBoost);
+  };
+
+  const rawClickValue = getClickValue();
   const clicksPerSecond = blackHole.autoClicker.level === 0 
     ? 0 
     : Math.min(Math.pow(2, blackHole.autoClicker.level - 1), 32);
-
-  const isAutoClickerMaxed = blackHole.autoClicker.level >= MAX_AUTO_CLICKER_LEVEL;
+  const clicksPerMinute = clicksPerSecond * 60;
+  const moneyPerMinute = rawClickValue * clicksPerSecond * 60;
+  const gemsPerMinute = Math.floor((clicksPerMinute / CLICKS_THRESHOLD_FOR_GEM) || 0);
 
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg p-4 flex flex-col items-center">
@@ -150,25 +163,31 @@ export default function BlackHole() {
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-          <span className="text-cyan-400 font-bold text-lg">+${formatNumber(clickValue)}</span>
+          <span className="text-cyan-400 font-bold text-lg">+${formatNumber(rawClickValue)}</span>
         </div>
       </motion.button>
 
       {/* Stats */}
       <div className="w-full space-y-2 mb-4">
-        <div className="text-sm text-gray-400">
-          Click Value: ${formatNumber(clickValue)}
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-400">
+            Click Value: ${formatNumber(rawClickValue)}
+          </div>
+          {blackHole.autoClicker.level > 0 && (
+            <div className="text-sm text-cyan-400">
+              {formatNumber(clicksPerSecond)}/s
+            </div>
+          )}
         </div>
         {blackHole.autoClicker.level > 0 && (
-          <>
-            <div className="text-sm text-cyan-400">
-              Auto-Clicks: {formatNumber(clicksPerSecond)}/s
-            </div>
+          <div className="flex justify-between items-center">
             <div className="text-sm text-fuchsia-400 flex items-center gap-1">
-              <FaGem className="text-sm" />
-              {Math.floor((clicksPerSecond * 60) / CLICKS_THRESHOLD_FOR_GEM)}/min
+              <FaGem className="text-sm" /> {gemsPerMinute}/min
             </div>
-          </>
+            <div className="text-sm text-green-400">
+              ${formatNumber(moneyPerMinute)}/min
+            </div>
+          </div>
         )}
       </div>
 

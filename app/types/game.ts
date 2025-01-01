@@ -1,5 +1,6 @@
 export type UpgradeType = 'production' | 'value';
 export type GlobalUpgradeType = 'materialValue' | 'nodeEfficiency' | 'storageOptimization';
+export type BoostType = 'materialValue' | 'productionSpeed' | 'clickPower';
 
 export interface Material {
   id: string;
@@ -52,6 +53,14 @@ export interface BlackHole {
   };
 }
 
+export interface Boost {
+  type: BoostType;
+  multiplier: number;
+  duration: number;  // Duration in seconds
+  endsAt: number | null;  // Timestamp when boost ends, null if not active
+  cost: number;  // Cost in cosmic gems
+}
+
 export interface GameState {
   money: number;
   cosmicGems: number;
@@ -59,6 +68,7 @@ export interface GameState {
   loadingDock: LoadingDock;
   globalUpgrades: GlobalUpgrades;
   blackHole: BlackHole;
+  activeBoosts: { [key in BoostType]?: Boost };
   _shouldSave?: boolean;
 }
 
@@ -72,5 +82,7 @@ export type GameAction =
   | { type: 'LOAD_GAME_STATE'; payload: GameState }
   | { type: 'SAVE_GAME_STATE' }
   | { type: 'PURCHASE_DOCK_MANAGER' }
-  | { type: 'CLICK_BLACK_HOLE' }
-  | { type: 'UPGRADE_BLACK_HOLE' }; 
+  | { type: 'CLICK_BLACK_HOLE'; payload: { gemsEarned: number } }
+  | { type: 'UPGRADE_BLACK_HOLE' }
+  | { type: 'UPGRADE_BLACK_HOLE_AUTO_CLICKER' }
+  | { type: 'ACTIVATE_BOOST'; payload: { boostType: BoostType; cost: number } }; 

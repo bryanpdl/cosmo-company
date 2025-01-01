@@ -12,16 +12,20 @@ export default function LoadingDock() {
 
   // Calculate total value of stored materials
   let totalValue = 0;
+  const materialBoost = state.activeBoosts.materialValue?.endsAt && state.activeBoosts.materialValue.endsAt > Date.now()
+    ? state.activeBoosts.materialValue.multiplier
+    : 1;
+
   Object.entries(loadingDock.stored).forEach(([materialId, amount]) => {
     const node = nodes.find(n => n.material.id === materialId);
     if (node) {
       const nodeValueMultiplier = 1 + (node.level.value - 1) * 0.15;
       const baseValue = node.material.baseValue * amount;
-      totalValue += baseValue * nodeValueMultiplier * globalUpgrades.materialValue.multiplier;
+      totalValue += baseValue * nodeValueMultiplier * globalUpgrades.materialValue.multiplier * materialBoost;
     }
   });
 
-  const payloadBoostMultiplier = 1 + (Math.floor(loadingDock.level / 1) * 0.01);
+  const payloadBoostMultiplier = 1 + ((loadingDock.level - 1) * 0.01);
   const boostedValue = totalValue * payloadBoostMultiplier;
   const gemsToEarn = Math.floor(boostedValue / 250000);
   const gemProgress = (boostedValue % 250000) / 250000;
@@ -96,7 +100,8 @@ export default function LoadingDock() {
       {/* Payload Boost Display */}
       <div className="text-sm text-gray-400 mb-4 flex justify-between items-center">
         <span className="text-cyan-400">
-          +{((payloadBoostMultiplier - 1) * 100).toFixed(0)}% Payload Boost (+${formatNumber(boostedValue - totalValue)})
+          +{((payloadBoostMultiplier - 1) * 100).toFixed(0)}% Payload Boost
+          {totalValue > 0 && ` (+$${formatNumber(boostedValue - totalValue)})`}
         </span>
       </div>
 
